@@ -56,7 +56,12 @@ namespace AElf.Configuration
 
             DatabaseConfig.Instance.Number = opts.DBNumber;
 
+            // consensus config
             ConsensusConfig.Instance.ConsensusType = ConsensusTypeHelper.GetType(opts.ConsensusType);
+            ConsensusConfig.Instance.DPoSMiningInterval = opts.AElfDPoSMiningInterval;
+            ConsensusConfig.Instance.SingleNodeMiningInterval = opts.SingleNodeMiningInterval;
+            GlobalConfig.MiningTimeout = opts.AElfDPoSMiningInterval * 9 / 10;
+            GlobalConfig.MiningSlack = opts.AElfDPoSMiningInterval * 2;
 
             // tx pool config
             TransactionPoolConfig.Instance.FeeThreshold = opts.MinimalFee;
@@ -73,8 +78,6 @@ namespace AElf.Configuration
             NodeConfig.Instance.NodeAccount = opts.NodeAccount;
             NodeConfig.Instance.NodeAccountPassword = opts.NodeAccountPassword;
             NodeConfig.Instance.ConsensusInfoGenerator = opts.IsConsensusInfoGenerator;
-            // TODO: 
-            NodeConfig.Instance.ConsensusKind = ConsensusKind.AElfDPoS;
 
             // Actor
             if (opts.ActorIsCluster.HasValue)

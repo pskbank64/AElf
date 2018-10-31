@@ -86,10 +86,10 @@ namespace AElf.Miner.Rpc.Client
         /// </summary>
         public void UpdateRequestInterval()
         {
-            _clientToParentChain?.UpdateRequestInterval(GlobalConfig.AElfMiningInterval);
+            _clientToParentChain?.UpdateRequestInterval(GlobalConfig.MiningTimeout);
             _clientsToSideChains.AsParallel().ForEach(kv =>
             {
-                kv.Value.UpdateRequestInterval(GlobalConfig.AElfMiningInterval);
+                kv.Value.UpdateRequestInterval(GlobalConfig.MiningTimeout);
             });
         }
 

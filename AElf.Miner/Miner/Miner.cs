@@ -472,7 +472,7 @@ namespace AElf.Miner.Miner
         /// </summary>
         public void Init()
         {
-            _timeoutMilliseconds = GlobalConfig.AElfMiningInterval;
+            _timeoutMilliseconds = GlobalConfig.MiningTimeout;
             _keyPair = NodeConfig.Instance.ECKeyPair;
             _producerAddress = Address.FromRawBytes(_keyPair.GetEncodedPublicKey());
             _blockChain = _chainService.GetBlockChain(Config.ChainId);

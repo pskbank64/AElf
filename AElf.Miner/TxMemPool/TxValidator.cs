@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf.ChainController;
 using AElf.Common;
 using AElf.Configuration;
+using AElf.Configuration.Config.Consensus;
 using AElf.Kernel;
 using AElf.Kernel.Managers;
 using AElf.Types.CSharp;
@@ -141,7 +142,7 @@ namespace AElf.Miner.TxMemPool
                     $"Unable to get canonical hash for height {tx.RefBlockNumber} - current height: {curHeight}");
             }
 
-            if (GlobalConfig.BlockProducerNumber == 1)
+            if (ConsensusConfig.Instance.BlockProducerNumber == 1)
             {
                 return TxValidation.TxInsertionAndBroadcastingError.Valid;
             }

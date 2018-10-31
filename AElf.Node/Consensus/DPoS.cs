@@ -7,6 +7,7 @@ using AElf.ChainController;
 using AElf.ChainController.EventMessages;
 using AElf.Common;
 using AElf.Configuration;
+using AElf.Configuration.Config.Consensus;
 using AElf.Cryptography.ECDSA;
 using AElf.Kernel.Consensus;
 using AElf.Miner.Miner;
@@ -82,13 +83,12 @@ namespace AElf.Kernel.Node
 
             var count = MinersConfig.Instance.Producers.Count;
 
-            GlobalConfig.BlockProducerNumber = count;
-            GlobalConfig.BlockNumberOfEachRound = count + 1;
+            ConsensusConfig.Instance.BlockProducerNumber = count;
 
-            _logger?.Info("Block Producer nodes count:" + GlobalConfig.BlockProducerNumber);
-            _logger?.Info("Blocks of one round:" + GlobalConfig.BlockNumberOfEachRound);
+            _logger?.Info("Block Producer nodes count:" + ConsensusConfig.Instance.BlockProducerNumber);
+            _logger?.Info("Blocks of one round:" + ConsensusConfig.Instance.BlockNumberOfEachRound);
 
-            if (GlobalConfig.BlockProducerNumber == 1 && NodeConfig.Instance.IsMiner)
+            if (ConsensusConfig.Instance.BlockProducerNumber == 1 && NodeConfig.Instance.IsMiner)
             {
                 AElfDPoSObserver.RecoverMining();
             }
@@ -137,7 +137,7 @@ namespace AElf.Kernel.Node
             }
 
             Helper.SyncMiningInterval();
-            _logger?.Info($"Set AElf DPoS mining interval to: {GlobalConfig.AElfDPoSMiningInterval} ms.");
+            _logger?.Info($"Set AElf DPoS mining interval to: {ConsensusConfig.Instance.DPoSMiningInterval} ms.");
 
             if (Helper.CanRecoverDPoSInformation())
             {
@@ -191,7 +191,8 @@ namespace AElf.Kernel.Node
                 RefBlockNumber = bn,
                 RefBlockPrefix = ByteString.CopyFrom(bhPref),
                 MethodName = methodName,
-                Sig = new Signature{
+                Sig = new Signature
+                {
                     P = ByteString.CopyFrom(_nodeKeyPair.NonCompressedEncodedPublicKey)
                 },
                 Type = TransactionType.DposTransaction
@@ -254,7 +255,7 @@ namespace AElf.Kernel.Node
             {
                 Miners.ToByteArray(),
                 Helper.GenerateInfoForFirstTwoRounds().ToByteArray(),
-                new SInt32Value {Value = GlobalConfig.AElfDPoSMiningInterval}.ToByteArray(),
+                new SInt32Value {Value = ConsensusConfig.Instance.DPoSMiningInterval}.ToByteArray(),
                 logLevel.ToByteArray()
             };
             var txToInitializeAElfDPoS = await GenerateTransactionAsync("InitializeAElfDPoS", parameters);
@@ -438,12 +439,12 @@ namespace AElf.Kernel.Node
 
             var endTimeSlot =
                 startTimeSlot.AddMilliseconds(
-                    GlobalConfig.BlockProducerNumber * GlobalConfig.AElfDPoSMiningInterval * 2);
+                    ConsensusConfig.Instance.BlockProducerNumber * ConsensusConfig.Instance.DPoSMiningInterval * 2);
 
             return currentTime >
                    startTimeSlot.AddMilliseconds(
-                       -GlobalConfig.BlockProducerNumber * GlobalConfig.AElfDPoSMiningInterval) ||
-                   currentTime < endTimeSlot.AddMilliseconds(GlobalConfig.AElfDPoSMiningInterval);
+                       -ConsensusConfig.Instance.BlockProducerNumber * ConsensusConfig.Instance.DPoSMiningInterval) ||
+                   currentTime < endTimeSlot.AddMilliseconds(ConsensusConfig.Instance.DPoSMiningInterval);
         }
 
         private async Task BroadcastTransaction(Transaction tx)

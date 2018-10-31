@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AElf.ChainController;
 using AElf.Common;
 using AElf.Configuration;
+using AElf.Configuration.Config.Consensus;
 using AElf.Kernel;
 using AElf.Kernel.Managers;
 using AElf.Miner.TxMemPool.RefBlockExceptions;
@@ -79,7 +80,7 @@ namespace AElf.Miner.TxMemPool
             }
 
             // TODO: figure out why do we need this
-            if (GlobalConfig.BlockProducerNumber == 1)
+            if (ConsensusConfig.Instance.BlockProducerNumber == 1)
             {
                 return;
             }

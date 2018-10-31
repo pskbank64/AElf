@@ -14,24 +14,24 @@ namespace AElf.Common
 
         public static readonly string GenesisBasicContract = "BasicContractZero";
 
-        public static int BlockProducerNumber = 17;
-        public static int BlockNumberOfEachRound = 18;
         public const int AElfLogInterval = 900;
 
-        #region AElf DPoS
+        public const bool DoWeNeedToAppointDPoSGenerator = false;
 
+        public static int MiningTimeout = 4000 * 9 / 10;
+        
+        #region AElf DPoS
+        
+        public static int MiningSlack = 8000;
         public const int AElfDPoSLogRoundCount = 1;
-        public static int AElfDPoSMiningInterval = 2000;
-        public static readonly int AElfMiningInterval = AElfDPoSMiningInterval * 9 / 10;
-        public const int AElfWaitFirstRoundTime = 8000;
-        public const string AElfDPoSCurrentRoundNumber = "AElfCurrentRoundNumber";
-        public const string AElfDPoSBlockProducerString = "AElfBlockProducer";
-        public const string AElfDPoSInformationString = "AElfDPoSInformation";
-        public const string AElfDPoSExtraBlockProducerString = "AElfExtraBlockProducer";
-        public const string AElfDPoSExtraBlockTimeSlotString = "AElfExtraBlockTimeSlot";
-        public const string AElfDPoSFirstPlaceOfEachRoundString = "AElfFirstPlaceOfEachRound";
-        public const string AElfDPoSMiningIntervalString = "AElfDPoSMiningInterval";
-        public const string AElfDPoSMiningRoundHashMapString = "AElfDPoSMiningRoundHashMap";
+        public const string AElfDPoSCurrentRoundNumber = "__AElfCurrentRoundNumber__";
+        public const string AElfDPoSBlockProducerString = "__AElfBlockProducer__";
+        public const string AElfDPoSInformationString = "__AElfDPoSInformation__";
+        public const string AElfDPoSExtraBlockProducerString = "__AElfExtraBlockProducer__";
+        public const string AElfDPoSExtraBlockTimeSlotString = "__AElfExtraBlockTimeSlot__";
+        public const string AElfDPoSFirstPlaceOfEachRoundString = "__AElfFirstPlaceOfEachRound__";
+        public const string AElfDPoSMiningIntervalString = "__AElfDPoSMiningInterval__";
+        public const string AElfDPoSMiningRoundHashMapString = "__AElfDPoSMiningRoundHashMap__";
 
         #endregion
 
@@ -39,7 +39,7 @@ namespace AElf.Common
         public const string AElfTxRootMerklePathInParentChain = "__TxRootMerklePathInParentChain__";
         public const string AElfParentChainBlockInfo = "__ParentChainBlockInfo__";
         public const string AElfBoundParentChainHeight = "__BoundParentChainHeight__";
-        public static readonly int AElfInitCrossChainRequestInterval = AElfDPoSMiningInterval / 1000;
+        public static readonly int AElfInitCrossChainRequestInterval = 4;
         
         #endregion
 

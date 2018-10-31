@@ -3,6 +3,7 @@ using CommandLine;
 
 namespace AElf.Configuration
 {
+    // ReSharper disable InconsistentNaming
     public class CommandLineOptions
     {
         #region Chain
@@ -118,18 +119,14 @@ namespace AElf.Configuration
         [Option('g', "dpos.generator", Default = false, HelpText = "Is the one who will generate DPoS information")]
         public bool IsConsensusInfoGenerator { get; set; }
 
-        [Option("consensus.type", Default = "AElfDPoS", HelpText = "Select the consensus type: AElfDPoS,PoTC or SingleNode")]
+        [Option("consensus.type", Default = "AElfDPoS", HelpText = "Select the consensus type: AElfDPoS, PoW or SingleNode")]
         public string ConsensusType { get; set; }
 
         [Option("dpos.interval", Default = 4000, HelpText = "Mining interval of AElf DPoS.")]
-        // ReSharper disable once InconsistentNaming
         public int AElfDPoSMiningInterval { get; set; }
 
-        [Option("potc.count", Default = (ulong) 8000, HelpText = "Expected transactions count.")]
-        public ulong ExpectedTxsCount { get; set; }
-
         [Option("single.interval", Default = 4000, HelpText = "Mining interval if use single node to test other logic.")]
-        public int MiningInterval { get; set; }
+        public int SingleNodeMiningInterval { get; set; }
 
         #endregion
 

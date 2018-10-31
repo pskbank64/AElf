@@ -1,11 +1,12 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Common.Attributes;
 using AElf.Cryptography.ECDSA;
 using AElf.Kernel;
 using AElf.Common;
+using AElf.Common.Enums;
 using AElf.Configuration;
+using AElf.Configuration.Config.Consensus;
 using AElf.Kernel.Consensus;
 using AElf.SmartContract;
 using AElf.Types.CSharp;
@@ -32,17 +33,15 @@ namespace AElf.ChainController
 
         public async Task<BlockValidationResult> ValidateBlockAsync(IBlock block, IChainContext context)
         {
-            if (NodeConfig.Instance.ConsensusKind == ConsensusKind.AElfDPoS)
+            switch (ConsensusConfig.Instance.ConsensusType)
             {
-                return await DPoSValidation(block, context);
+                case ConsensusType.AElfDPoS:
+                    return await DPoSValidation(block, context);
+                case ConsensusType.PoW:
+                    return await PoWValidation(block, context);
+                default:
+                    return BlockValidationResult.NotImplementConsensus;
             }
-
-            if (NodeConfig.Instance.ConsensusKind == ConsensusKind.AElfPoW)
-            {
-                return await PoWValidation(block, context);
-            }
-
-            return BlockValidationResult.NotImplementConsensus;
         }
 
         private async Task<BlockValidationResult> DPoSValidation(IBlock block, IChainContext context)
@@ -124,9 +123,9 @@ namespace AElf.ChainController
             }
         }
 
-        private async Task<BlockValidationResult> PoWValidation(IBlock block, IChainContext context)
+        private Task<BlockValidationResult> PoWValidation(IBlock block, IChainContext context)
         {
-            return BlockValidationResult.IncorrectPoWResult;
+            throw new NotImplementedException();
         }
 
         private Transaction GetTxToVerifyBlockProducer(Address contractAccountHash, ECKeyPair keyPair,
