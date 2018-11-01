@@ -1,10 +1,54 @@
-// ReSharper disable once CheckNamespace
 namespace AElf.Synchronization.BlockExecution
 {
     // ReSharper disable InconsistentNaming
     public enum BlockExecutionResult
     {
+        // Oh yes
         Success = 1,
-        Failed = 2
+        PrepareSuccess,
+        CollectTransactionsSuccess,
+        UpdateWorldStateSuccess,
+
+        // Haven't appended yet
+        InvalidSideChainInfo = 11,
+        InvalidParentChainBlockInfo,
+        
+        ExecutionCancelled = 51,
+        IncorrectStateMerkleTree,
+        BlockIsNull,
+        NoTransaction,
+        TooManyTxsForParentChainBlock,
+        NotExecuted,
+
+        // Need to rollback
+        Failed = 101
+    }
+
+    public static class ExecutionResultExtensions
+    {
+        public static bool IsSuccess(this BlockExecutionResult result)
+        {
+            return (int) result < 11;
+        }
+
+        public static bool CanExecuteAgain(this BlockExecutionResult result)
+        {
+            return (int) result > 10;
+        }
+
+        public static bool IsFailed(this BlockExecutionResult result)
+        {
+            return (int) result > 10;
+        }
+        
+        public static bool CannotExecute(this BlockExecutionResult result)
+        {
+            return (int) result > 50;
+        }
+
+        public static bool NeedToRollback(this BlockExecutionResult result)
+        {
+            return (int) result > 100;
+        }
     }
 }

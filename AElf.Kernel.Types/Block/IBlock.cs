@@ -12,10 +12,10 @@ namespace AElf.Kernel
         BlockBody Body { get; set; }
         void FillTxsMerkleTreeRootInHeader();
         Block Complete();
-        bool AddTransactions(IEnumerable<Transaction> txHashes);
+        bool AddTransactions(IEnumerable<Hash> txHashes);
         void Sign(ECKeyPair keyPair);
         ParentChainBlockInfo ParentChainBlockInfo { get; set; }
-        ulong Index { get; }
-        string BlockHashToHex { get; }
+        ulong Index { get; set; }
+        string BlockHashToHex { get; set; }
     }
 }

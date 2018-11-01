@@ -53,11 +53,44 @@ namespace AElf.Node
                     {
                         await HandleTxRequest(message, args.PeerMessage);
                     }
+                    else if (msgType == AElfProtocolMsgType.HeaderRequest)
+                    {
+                        await HandleBlockHeaderRequest(message, args.PeerMessage);
+                    }
                 }
             }
             catch (Exception e)
             {
                 _logger?.Error(e, "Error while dequeuing.");
+            }
+        }
+
+        private async Task HandleBlockHeaderRequest(Message message, PeerMessageReceivedArgs args)
+        {
+            if (message?.Payload == null)
+            {
+                _logger?.Warn($"Hash request from [{args.Peer}], message/payload is null.");
+                return;
+            }
+
+            try
+            {
+                var hashReq = BlockHeaderRequest.Parser.ParseFrom(message.Payload);
+                var blockHeaderList = await _handler.GetBlockHeaderList((ulong) hashReq.Height, hashReq.Count);
+                
+                var req = NetRequestFactory.CreateMessage(AElfProtocolMsgType.Headers, blockHeaderList.ToByteArray());
+                
+                if (message.HasId)
+                    req.Id = message.Id;
+
+                args.Peer.EnqueueOutgoing(req);
+
+                _logger?.Debug($"Send {blockHeaderList.Headers.Count} block headers start " +
+                               $"from {blockHeaderList.Headers.FirstOrDefault()?.GetHash().DumpHex()}, to node {args.Peer}.");
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e, "Error while during HandleBlockRequest.");
             }
         }
 
@@ -104,7 +137,7 @@ namespace AElf.Node
 
                 if (b == null)
                 {
-                    _logger?.Warn($"Block not found {breq.Id.ToByteArray().ToHex()}");
+                    _logger?.Warn($"Block not found {breq.Id?.ToByteArray().ToHex()}");
                     return;
                 }
                     
@@ -116,7 +149,7 @@ namespace AElf.Node
 
                 args.Peer.EnqueueOutgoing(req);
 
-                _logger?.Debug("Send block " + b.GetHash().DumpHex() + " to " + args.Peer);
+                _logger?.Debug($"Send block {b.BlockHashToHex } to {args.Peer}");
             }
             catch (Exception e)
             {
@@ -178,7 +211,7 @@ namespace AElf.Node
             }
             catch (Exception e)
             {
-                _logger?.Error(e, $"Transaction request failed.");
+                _logger?.Error(e, "Transaction request failed.");
             }
         }
 
@@ -200,8 +233,8 @@ namespace AElf.Node
             var serializedBlock = b.ToByteArray();
             await _netManager.BroadcastBlock(block.GetHash().Value.ToByteArray(), serializedBlock);
 
-            var bh = block.GetHash().DumpHex();
-            _logger?.Trace($"Broadcasted block \"{bh}\" to peers with {block.Body.TransactionsCount} tx(s). Block height: [{block.Header.Index}].");
+            _logger?.Trace($"Broadcasted block {block.BlockHashToHex} to peers " +
+                           $"with {block.Body.TransactionsCount} tx(s). Block height: [{block.Header.Index}].");
 
             return true;
         }

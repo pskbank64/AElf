@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Common.Attributes;
@@ -78,21 +79,28 @@ namespace AElf.ChainController
             }
 
             //Formulate an Executive and execute a transaction of checking time slot of this block producer
+            TransactionTrace trace;
             var executive = await _smartContractService.GetExecutiveAsync(contractAccountHash, context.ChainId);
-            var tx = GetTxToVerifyBlockProducer(contractAccountHash, NodeConfig.Instance.ECKeyPair, address,
-                timestampOfBlock, roundId);
-            if (tx == null)
+            try
             {
-                return BlockValidationResult.FailedToCheckConsensusInvalidation;
+                var tx = GetTxToVerifyBlockProducer(contractAccountHash, NodeConfig.Instance.ECKeyPair, address,
+                    timestampOfBlock, roundId);
+                if (tx == null)
+                {
+                    return BlockValidationResult.FailedToCheckConsensusInvalidation;
+                }
+
+                var tc = new TransactionContext
+                {
+                    Transaction = tx
+                };
+                await executive.SetTransactionContext(tc).Apply();
+                trace = tc.Trace;
             }
-
-            var tc = new TransactionContext
+            finally
             {
-                Transaction = tx
-            };
-            await executive.SetTransactionContext(tc).Apply();
-            var trace = tc.Trace;
-
+                _smartContractService.PutExecutiveAsync(contractAccountHash, executive).Wait();
+            }
             //If failed to execute the transaction of checking time slot
             if (!trace.StdErr.IsNullOrEmpty())
             {
@@ -136,7 +144,10 @@ namespace AElf.ChainController
                 To = contractAccountHash,
                 IncrementId = 0,
                 MethodName = "Validation",
-                P = ByteString.CopyFrom(keyPair.PublicKey.Q.GetEncoded()),
+                Sig = new Signature
+                {
+                    P = ByteString.CopyFrom(keyPair.PublicKey.Q.GetEncoded())
+                },
                 Params = ByteString.CopyFrom(ParamsPacker.Pack(
                     new StringValue {Value = recipientAddress.RemoveHexPrefix()}.ToByteArray(),
                     timestamp.ToByteArray(),
@@ -147,8 +158,8 @@ namespace AElf.ChainController
             var signature = signer.Sign(keyPair, tx.GetHash().DumpByteArray());
 
             // Update the signature
-            tx.R = ByteString.CopyFrom(signature.R);
-            tx.S = ByteString.CopyFrom(signature.S);
+            tx.Sig.R = ByteString.CopyFrom(signature.R);
+            tx.Sig.S = ByteString.CopyFrom(signature.S);
 
             return tx;
         }

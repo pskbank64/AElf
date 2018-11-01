@@ -13,7 +13,7 @@ using NLog;
 
 namespace AElf.Kernel.Consensus
 {
-    [LoggerName(nameof(AElfDPoSHelper))]
+    // TODO: Cache
     // ReSharper disable InconsistentNaming
     public class AElfDPoSHelper
     {
@@ -25,7 +25,6 @@ namespace AElf.Kernel.Consensus
 
         public AElfDPoSInformation DpoSInformation { get; private set; }
 
-        
         private DataProvider DataProvider
         {
             get
@@ -35,18 +34,16 @@ namespace AElf.Kernel.Consensus
                 return dp;
             }
         }
-        
+
         public Miners Miners
         {
             get
             {
                 try
                 {
-                    // If reusing DataProvider, the cache has to be cleared first 
-//                    _dataProvider.ClearCache();
-//                    var miners = Miners.Parser.ParseFrom(_dataProvider
-//                        .GetAsync<Miners>(Hash.FromString(GlobalConfig.AElfDPoSBlockProducerString)).Result);
-                    var miners = Miners.Parser.ParseFrom(GetBytes<Miners>(Hash.FromString(GlobalConfig.AElfDPoSBlockProducerString)));
+                    var miners =
+                        Miners.Parser.ParseFrom(
+                            GetBytes<Miners>(Hash.FromString(GlobalConfig.AElfDPoSBlockProducerString)));
                     return miners;
                 }
                 catch (Exception)
@@ -62,7 +59,8 @@ namespace AElf.Kernel.Consensus
             {
                 try
                 {
-                    return UInt64Value.Parser.ParseFrom(GetBytes<UInt64Value>(Hash.FromString(GlobalConfig.AElfDPoSCurrentRoundNumber)));
+                    return UInt64Value.Parser.ParseFrom(
+                        GetBytes<UInt64Value>(Hash.FromString(GlobalConfig.AElfDPoSCurrentRoundNumber)));
                 }
                 catch (Exception)
                 {
@@ -112,7 +110,8 @@ namespace AElf.Kernel.Consensus
             {
                 try
                 {
-                    return SInt32Value.Parser.ParseFrom(GetBytes<SInt32Value>(Hash.FromString(GlobalConfig.AElfDPoSMiningIntervalString)));
+                    return SInt32Value.Parser.ParseFrom(
+                        GetBytes<SInt32Value>(Hash.FromString(GlobalConfig.AElfDPoSMiningIntervalString)));
                 }
                 catch (Exception e)
                 {
@@ -156,9 +155,10 @@ namespace AElf.Kernel.Consensus
         {
             _chainId = chainId;
             _miners = miners;
-            _logger = LogManager.GetLogger(nameof(AElfDPoSHelper));
             _contractAddressHash = contractAddressHash;
             _stateStore = stateStore;
+
+            _logger = LogManager.GetLogger(nameof(AElfDPoSHelper));
         }
 
         /// <summary>
@@ -171,7 +171,8 @@ namespace AElf.Kernel.Consensus
             {
                 try
                 {
-                    var bytes = GetBytes<Round>(Hash.FromMessage(CurrentRoundNumber), GlobalConfig.AElfDPoSInformationString);
+                    var bytes = GetBytes<Round>(Hash.FromMessage(CurrentRoundNumber),
+                        GlobalConfig.AElfDPoSInformationString);
                     var round = Round.Parser.ParseFrom(bytes);
                     return round.BlockProducers[accountAddress];
                 }
@@ -195,7 +196,8 @@ namespace AElf.Kernel.Consensus
                 }
                 catch (Exception e)
                 {
-                    _logger.Error(e, $"Failed to get Round information of provided round number. - {roundNumber.Value}\n");
+                    _logger.Error(e,
+                        $"Failed to get Round information of provided round number. - {roundNumber.Value}\n");
                     return default(Round);
                 }
             }
@@ -223,14 +225,14 @@ namespace AElf.Kernel.Consensus
                 select obj.Key;
 
             var enumerable = sortedMiningNodes.ToList();
-            
+
             var infosOfRound1 = new Round();
 
             var selected = _miners.Nodes.Count / 2;
             for (var i = 0; i < enumerable.Count; i++)
             {
                 var bpInfo = new BlockProducer {IsEBP = false};
-                
+
                 if (i == selected)
                 {
                     bpInfo.IsEBP = true;
@@ -238,26 +240,27 @@ namespace AElf.Kernel.Consensus
 
                 bpInfo.Order = i + 1;
                 bpInfo.Signature = Hash.Generate();
-                bpInfo.TimeSlot = GetTimestampOfUtcNow(i * GlobalConfig.AElfDPoSMiningInterval + GlobalConfig.AElfWaitFirstRoundTime);
+                bpInfo.TimeSlot =
+                    GetTimestampOfUtcNow(i * GlobalConfig.AElfDPoSMiningInterval + GlobalConfig.AElfWaitFirstRoundTime);
 
                 infosOfRound1.BlockProducers.Add(enumerable[i], bpInfo);
             }
 
             // Second round
             dict = new Dictionary<string, int>();
-            
+
             foreach (var node in _miners.Nodes)
             {
                 dict.Add(node, node[0]);
             }
-            
+
             sortedMiningNodes =
                 from obj in dict
                 orderby obj.Value descending
                 select obj.Key;
-            
+
             enumerable = sortedMiningNodes.ToList();
-            
+
             var infosOfRound2 = new Round();
 
             var addition = enumerable.Count * GlobalConfig.AElfDPoSMiningInterval + GlobalConfig.AElfDPoSMiningInterval;
@@ -272,7 +275,8 @@ namespace AElf.Kernel.Consensus
                     bpInfo.IsEBP = true;
                 }
 
-                bpInfo.TimeSlot = GetTimestampOfUtcNow(i * GlobalConfig.AElfDPoSMiningInterval + addition + GlobalConfig.AElfWaitFirstRoundTime);
+                bpInfo.TimeSlot = GetTimestampOfUtcNow(i * GlobalConfig.AElfDPoSMiningInterval + addition +
+                                                       GlobalConfig.AElfWaitFirstRoundTime);
                 bpInfo.Order = i + 1;
 
                 infosOfRound2.BlockProducers.Add(enumerable[i], bpInfo);
@@ -283,7 +287,7 @@ namespace AElf.Kernel.Consensus
 
             var dPoSInfo = new AElfDPoSInformation
             {
-                Rounds = { infosOfRound1, infosOfRound2}
+                Rounds = {infosOfRound1, infosOfRound2}
             };
 
             return dPoSInfo;
@@ -325,7 +329,7 @@ namespace AElf.Kernel.Consensus
                 return new Round();
             }
         }
-        
+
         public Hash CalculateSignature(Hash inValue)
         {
             try
@@ -408,7 +412,7 @@ namespace AElf.Kernel.Consensus
 
                     infosOfNextRound.BlockProducers[orderDict[i]] = bpInfoNew;
                 }
-                
+
                 infosOfNextRound.RoundNumber = CurrentRoundNumber.Value + 1;
 
                 return infosOfNextRound;
@@ -438,7 +442,7 @@ namespace AElf.Kernel.Consensus
                 var order = GetModulus(sigNum, blockProducerCount);
 
                 var nextEBP = _miners.Nodes[order];
-            
+
                 return new StringValue {Value = nextEBP.RemoveHexPrefix()};
             }
             catch (Exception e)
@@ -447,7 +451,7 @@ namespace AElf.Kernel.Consensus
                 return new StringValue {Value = ""};
             }
         }
-        
+
         // ReSharper disable once UnusedMember.Global
         public StringValue GetDPoSInfoToString()
         {
@@ -457,6 +461,7 @@ namespace AElf.Kernel.Consensus
             {
                 count = CurrentRoundNumber.Value;
             }
+
             var infoOfOneRound = "";
 
             ulong i = 1;
@@ -471,9 +476,9 @@ namespace AElf.Kernel.Consensus
             {
                 Value
                     = infoOfOneRound + $"EBP Time Slot of current round: {ExtraBlockTimeSlot.ToDateTime().ToLocalTime():u}\n"
-                             + "Current Round : " + CurrentRoundNumber?.Value
+                                     + "Current Round : " + CurrentRoundNumber?.Value
             };
-            
+
             return res;
         }
 
@@ -490,7 +495,7 @@ namespace AElf.Kernel.Consensus
                 {
                     return "";
                 }
-            
+
                 var currentRoundNumber = CurrentRoundNumber.Value;
                 ulong startRound;
                 if (countOfRounds >= currentRoundNumber)
@@ -516,8 +521,9 @@ namespace AElf.Kernel.Consensus
                     i++;
                 }
 
-                return infoOfOneRound + $"EBP TimeSlot of current round: {ExtraBlockTimeSlot.ToDateTime().ToLocalTime():u}\n"
-                                      + $"Current Round : {CurrentRoundNumber.Value}";
+                return
+                    infoOfOneRound + $"EBP TimeSlot of current round: {ExtraBlockTimeSlot.ToDateTime().ToLocalTime():u}\n"
+                                   + $"Current Round : {CurrentRoundNumber.Value}";
             }
             catch (Exception e)
             {
@@ -525,16 +531,16 @@ namespace AElf.Kernel.Consensus
                 return "";
             }
         }
-        
+
         public Tuple<Round, Round, StringValue> ExecuteTxsForExtraBlock()
         {
             var currentRoundInfo = SupplyPreviousRoundInfo();
             var nextRoundInfo = GenerateNextRoundOrder();
             var nextEBP = CalculateNextExtraBlockProducer();
-            
+
             return Tuple.Create(currentRoundInfo, nextRoundInfo, nextEBP);
         }
-        
+
         /// <summary>
         /// This method should return true if all the BPs restarted (and missed their time slots).
         /// </summary>
@@ -570,11 +576,12 @@ namespace AElf.Kernel.Consensus
         {
             GlobalConfig.AElfDPoSMiningInterval = MiningInterval.Value;
         }
-        
+
         public void LogDPoSInformation(ulong height)
         {
             _logger?.Trace("Log dpos information - Start");
-            _logger?.Trace(GetDPoSInfoToStringOfLatestRounds(GlobalConfig.AElfDPoSLogRoundCount) + $". Current height: {height}");
+            _logger?.Trace(GetDPoSInfoToStringOfLatestRounds(GlobalConfig.AElfDPoSLogRoundCount) +
+                           $". Current height: {height}");
             _logger?.Trace("Log dpos information - End");
         }
 
@@ -595,9 +602,12 @@ namespace AElf.Kernel.Consensus
                     result += "IsEBP:\t\t" + bpInfo.Value.IsEBP + "\n";
                     result += "Order:\t\t" + bpInfo.Value.Order + "\n";
                     result += "Time Slot:\t" + bpInfo.Value.TimeSlot.ToDateTime().ToLocalTime().ToString("u") + "\n";
-                    result += "Signature:\t" + bpInfo.Value.Signature?.Value.ToByteArray().ToHex().RemoveHexPrefix() + "\n";
-                    result += "Out Value:\t" + bpInfo.Value.OutValue?.Value.ToByteArray().ToHex().RemoveHexPrefix() + "\n";
-                    result += "In Value:\t" + bpInfo.Value.InValue?.Value.ToByteArray().ToHex().RemoveHexPrefix() + "\n";
+                    result += "Signature:\t" + bpInfo.Value.Signature?.Value.ToByteArray().ToHex().RemoveHexPrefix() +
+                              "\n";
+                    result += "Out Value:\t" + bpInfo.Value.OutValue?.Value.ToByteArray().ToHex().RemoveHexPrefix() +
+                              "\n";
+                    result += "In Value:\t" + bpInfo.Value.InValue?.Value.ToByteArray().ToHex().RemoveHexPrefix() +
+                              "\n";
                 }
 
                 return result + "\n";
@@ -608,7 +618,7 @@ namespace AElf.Kernel.Consensus
                 return "";
             }
         }
-        
+
         // ReSharper disable once MemberCanBeMadeStatic.Local
         private UInt64Value RoundNumberMinusOne(UInt64Value currentCount)
         {
@@ -616,7 +626,7 @@ namespace AElf.Kernel.Consensus
             current--;
             return new UInt64Value {Value = current};
         }
-        
+
         /// <summary>
         /// Get local time
         /// </summary>
@@ -632,7 +642,7 @@ namespace AElf.Kernel.Consensus
         {
             return Timestamp.FromDateTime(origin.ToDateTime().AddMilliseconds(offset));
         }
-        
+
         /// <summary>
         /// In case of forgetting to check negativee value.
         /// For now this method only used for generating order,

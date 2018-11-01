@@ -14,30 +14,32 @@ using AElf.Types.CSharp;
 using Google.Protobuf;
 using NLog;
 using NServiceKit.Common.Extensions;
+using AElf.Miner.EventMessages;
+using AElf.Miner.TxMemPool;
+using Easy.MessageHub;
 
 namespace AElf.Synchronization.BlockExecution
 {
     public class BlockExecutor : IBlockExecutor
     {
         private readonly IChainService _chainService;
-        private readonly ITransactionManager _transactionManager;
         private readonly ITransactionResultManager _transactionResultManager;
         private readonly IExecutingService _executingService;
         private readonly ILogger _logger;
         private readonly ClientManager _clientManager;
         private readonly IBinaryMerkleTreeManager _binaryMerkleTreeManager;
+        private readonly ITxHub _txHub;
 
         public BlockExecutor(IChainService chainService, IExecutingService executingService,
-            ITransactionManager transactionManager, ITransactionResultManager transactionResultManager,
-            ClientManager clientManager, IBinaryMerkleTreeManager binaryMerkleTreeManager)
+            ITransactionResultManager transactionResultManager, ClientManager clientManager,
+            IBinaryMerkleTreeManager binaryMerkleTreeManager, ITxHub txHub)
         {
             _chainService = chainService;
             _executingService = executingService;
-            _transactionManager = transactionManager;
             _transactionResultManager = transactionResultManager;
             _clientManager = clientManager;
             _binaryMerkleTreeManager = binaryMerkleTreeManager;
-
+            _txHub = txHub;
             _logger = LogManager.GetLogger(nameof(BlockExecutor));
         }
 
@@ -49,57 +51,87 @@ namespace AElf.Synchronization.BlockExecution
         /// <inheritdoc/>
         public async Task<BlockExecutionResult> ExecuteBlock(IBlock block)
         {
-            if (!await Prepare(block))
+            var result = await Prepare(block);
+            if (result.IsFailed())
             {
-                return BlockExecutionResult.Failed;
+                return result;
             }
+
+            _logger?.Trace($"Executing block {block.GetHash()}");
 
             var txnRes = new List<TransactionResult>();
             try
             {
                 // get txn from pool
-                var readyTxns = await CollectTransactions(block);
-                txnRes = await ExecuteTransactions(readyTxns, block, block.Header.GetDisambiguationHash());
+                var tuple = await CollectTransactions(block);
+                result = tuple.Item1;
+                if (result.IsFailed())
+                {
+                    return result;
+                }
 
-                await UpdateWorldState(block, txnRes);
+                var readyTxns = tuple.Item2;
+
+                var trs = await _txHub.GetReceiptsForAsync(readyTxns);
+                foreach (var tr in trs)
+                {
+                    if (!tr.IsExecutable)
+                    {
+                        throw new InvalidBlockException($"Transaction is not executable. {tr}");
+                    }    
+                }
+
+                txnRes = await ExecuteTransactions(readyTxns, block.Header.ChainId, block.Header.GetDisambiguationHash());
+                txnRes = SortToOriginalOrder(txnRes, readyTxns);
+
+                result = await UpdateWorldState(block, txnRes);
+                if (result.IsFailed())
+                {
+                    return result;
+                }
                 await UpdateSideChainInfo(block);
+
+                //Need-to-rollback boundary
+
                 await AppendBlock(block);
                 await InsertTxs(readyTxns, txnRes, block);
 
-                _logger?.Info($"Execute block {block.BlockHashToHex}.");
+                _logger?.Info($"Executed block {block.GetHash()}");
 
                 return BlockExecutionResult.Success;
             }
             catch (Exception e)
             {
-                if (e is InvalidBlockException)
+                BlockExecutionResult res = BlockExecutionResult.Failed;
+                if (e is InvalidCrossChainInfoException i)
                 {
-                    _logger?.Warn(e, "Exception while execute block.");
-                }
+                    _logger?.Warn(e, $"Exception while execute block {block.BlockHashToHex}.");
+                    res = i.Result;
+;               }
                 else
                 {
-                    _logger?.Error(e, "Exception while execute block.");
+                    _logger?.Error(e, "Exception while execute block {block.BlockHashToHex}.");
                 }
 
                 // TODO, no wait may need improve
                 Rollback(block, txnRes).ConfigureAwait(false);
 
-                return BlockExecutionResult.Failed;
+                return res;
             }
         }
-
 
         /// <summary>
         /// Execute transactions.
         /// </summary>
         /// <param name="readyTxs"></param>
-        /// <param name="block"></param>
+        /// <param name="chainId"></param>
         /// <returns></returns>
-        private async Task<List<TransactionResult>> ExecuteTransactions(List<Transaction> readyTxs, IBlock block, Hash disambiguationHash)
+        private async Task<List<TransactionResult>> ExecuteTransactions(List<Transaction> readyTxs, Hash chainId,
+            Hash disambiguationHash)
         {
             var traces = readyTxs.Count == 0
                 ? new List<TransactionTrace>()
-                : await _executingService.ExecuteAsync(readyTxs, block.Header.ChainId, Cts.Token, disambiguationHash);
+                : await _executingService.ExecuteAsync(readyTxs, chainId, Cts.Token, disambiguationHash);
 
             var results = new List<TransactionResult>();
             foreach (var trace in traces)
@@ -128,6 +160,13 @@ namespace AElf.Synchronization.BlockExecution
             return results;
         }
 
+        private List<TransactionResult> SortToOriginalOrder(List<TransactionResult> results, List<Transaction> txs)
+        {
+            var indexes = txs.Select((x, i)=>new {hash=x.GetHash(),ind=i}).ToDictionary(x=>x.hash, x=>x.ind);
+            return results.Zip(results.Select(r => indexes[r.TransactionId]), Tuple.Create).OrderBy(
+                x => x.Item2).Select(x=>x.Item1).ToList();
+        }
+        
         #region Before transaction execution
 
         /// <summary>
@@ -135,30 +174,35 @@ namespace AElf.Synchronization.BlockExecution
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        private async Task<bool> Prepare(IBlock block)
+        private async Task<BlockExecutionResult> Prepare(IBlock block)
         {
-            string errlog = null;
-            bool res = true;
+            string errorLog = null;
+            var res = BlockExecutionResult.PrepareSuccess;
             if (Cts == null || Cts.IsCancellationRequested)
             {
-                errlog = "ExecuteBlock - Execution cancelled.";
-                res = false;
+                errorLog = "ExecuteBlock - Execution cancelled.";
+                res = BlockExecutionResult.ExecutionCancelled;
             }
-            else if (block?.Header == null || block.Body?.Transactions == null || block.Body.Transactions.Count <= 0)
+            else if (block?.Header == null)
             {
-                errlog = "ExecuteBlock - Null block or no transactions.";
-                res = false;
+                errorLog = "ExecuteBlock - Block is null.";
+                res = BlockExecutionResult.BlockIsNull;
             }
-            else if (!await ValidateSideChainBlockInfo(block))
+            else if (block.Body?.Transactions == null || block.Body.TransactionsCount <= 0)
+            {
+                errorLog = "ExecuteBlock - Transaction list is empty.";
+                res = BlockExecutionResult.NoTransaction;
+            }
+            else if (!ValidateSideChainBlockInfo(block))
             {
                 // side chain info verification 
                 // side chain info in this block cannot fit together with local side chain info.
-                errlog = "Invalid side chain info";
-                res = false;
+                errorLog = "Invalid side chain info";
+                res = BlockExecutionResult.InvalidSideChainInfo;
             }
 
-            if (!res)
-                _logger?.Warn(errlog);
+            if (res.IsFailed())
+                _logger?.Warn(errorLog);
 
             return res;
         }
@@ -170,7 +214,7 @@ namespace AElf.Synchronization.BlockExecution
         /// <returns>
         /// Return true if side chain info is consistent with local node, else return false;
         /// </returns>
-        private async Task<bool> ValidateSideChainBlockInfo(IBlock block)
+        private bool ValidateSideChainBlockInfo(IBlock block)
         {
             return block.Body.IndexedInfo.All(_clientManager.CheckSideChainBlockInfo);
         }
@@ -180,10 +224,11 @@ namespace AElf.Synchronization.BlockExecution
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        private async Task<List<Transaction>> CollectTransactions(IBlock block)
+        /// <exception cref="InvalidCrossChainInfoException"></exception>
+        private async Task<Tuple<BlockExecutionResult, List<Transaction>>> CollectTransactions(IBlock block)
         {
-            string errlog = null;
-            bool res = true;
+            //string errorLog = null;
+            var res = BlockExecutionResult.CollectTransactionsSuccess;
             var txs = block.Body.TransactionList.ToList();
             var readyTxs = new List<Transaction>();
             foreach (var tx in txs)
@@ -195,8 +240,8 @@ namespace AElf.Synchronization.BlockExecution
                         new[] {typeof(ParentChainBlockInfo)})[0];
                     if (!await ValidateParentChainBlockInfoTransaction(parentBlockInfo))
                     {
-                        errlog = "Invalid parent chain block info.";
-                        res = false;
+                        //errorLog = "Invalid parent chain block info.";
+                        res = BlockExecutionResult.InvalidParentChainBlockInfo;
                         break;
                     }
 
@@ -207,22 +252,18 @@ namespace AElf.Synchronization.BlockExecution
                 readyTxs.Add(tx);
             }
 
-            if (res && readyTxs.Count(t => t.Type == TransactionType.CrossChainBlockInfoTransaction) > 1)
+            if (res.IsSuccess() && readyTxs.Count(t => t.Type == TransactionType.CrossChainBlockInfoTransaction) > 1)
             {
-                res = false;
-                errlog = "More than one transaction to record parent chain block info.";
+                res = BlockExecutionResult.TooManyTxsForParentChainBlock;
+                //errorLog = "More than one transaction to record parent chain block info.";
             }
 
-            if (!res)
-                throw new InvalidBlockException(errlog);
-
-            return readyTxs;
+            return new Tuple<BlockExecutionResult, List<Transaction>>(res, readyTxs);
         }
 
         /// <summary>
         /// Validate parent chain block info.
         /// </summary>
-        /// <param name="transaction">System transaction with parent chain block info.</param>
         /// <returns>
         /// Return false if validation failed and then that block execution would fail.
         /// </returns>
@@ -239,16 +280,16 @@ namespace AElf.Synchronization.BlockExecution
 
                 if (cached.Equals(parentBlockInfo))
                     return true;
-
-                _logger.Warn($"Cached parent block info is {cached}");
-                _logger.Warn($"Parent block info in transaction is {parentBlockInfo}");
+                
+                _logger.Trace($"Cached parent block info is {cached}");
+                _logger.Trace($"Parent block info in transaction is {parentBlockInfo}");
                 return false;
             }
             catch (Exception e)
             {
                 if (e is ClientShutDownException)
                     return true;
-                _logger.Error(e, "Parent chain block info validation failed.");
+                _logger.Warn("Parent chain block info validation failed.");
                 return false;
             }
         }
@@ -261,20 +302,19 @@ namespace AElf.Synchronization.BlockExecution
         /// Update system state.
         /// </summary>
         /// <param name="block"></param>
+        /// <param name="results"></param>
         /// <returns></returns>
-        private async Task UpdateWorldState(IBlock block, IEnumerable<TransactionResult> results)
+        private async Task<BlockExecutionResult> UpdateWorldState(IBlock block, IEnumerable<TransactionResult> results)
         {
             var root = new BinaryMerkleTree().AddNodes(results.Select(x => x.StateHash)).ComputeRootHash();
-            string errlog = null;
-            bool res = true;
+            var res = BlockExecutionResult.UpdateWorldStateSuccess;
             if (root != block.Header.MerkleTreeRootOfWorldState)
             {
-                errlog = "ExecuteBlock - Incorrect merkle trees.";
-                res = false;
+                _logger?.Warn("ExecuteBlock - Incorrect merkle trees.");
+                res = BlockExecutionResult.IncorrectStateMerkleTree;
             }
 
-            if (!res)
-                throw new InvalidBlockException(errlog);
+            return res;
         }
 
         /// <summary>
@@ -298,10 +338,6 @@ namespace AElf.Synchronization.BlockExecution
         {
             var bn = block.Header.Index;
             var bh = block.Header.GetHash();
-            foreach (var t in executedTxs)
-            {
-                await _transactionManager.AddTransactionAsync(t);
-            }
 
             txResults.AsParallel().ForEach(async r =>
             {
@@ -316,7 +352,7 @@ namespace AElf.Synchronization.BlockExecution
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidBlockException"></exception>
+        /// <exception cref="InvalidCrossChainInfoException"></exception>
         private async Task UpdateSideChainInfo(IBlock block)
         {
             await _binaryMerkleTreeManager.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree,
@@ -329,14 +365,14 @@ namespace AElf.Synchronization.BlockExecution
             {
                 if (!await _clientManager.TryUpdateAndRemoveSideChainBlockInfo(blockInfo))
                     // Todo: _clientManager would be chaos if this happened.
-                    throw new InvalidBlockException(
-                        "Inconsistent side chain info. Something about side chain would be chaos if you see this. ");
+                    throw new InvalidCrossChainInfoException(
+                        "Inconsistent side chain info. Something about side chain would be chaos if you see this. ", BlockExecutionResult.InvalidSideChainInfo);
             }
 
             // update parent chain info
             if (!await _clientManager.UpdateParentChainBlockInfo(block.ParentChainBlockInfo))
-                throw new InvalidBlockException(
-                    "Inconsistent parent chain info. Something about parent chain would be chaos if you see this. ");
+                throw new InvalidCrossChainInfoException(
+                    "Inconsistent parent chain info. Something about parent chain would be chaos if you see this. ", BlockExecutionResult.InvalidSideChainInfo);
         }
 
         #endregion
@@ -349,7 +385,8 @@ namespace AElf.Synchronization.BlockExecution
                 return;
             var blockChain = _chainService.GetBlockChain(block.Header.ChainId);
             await blockChain.RollbackStateForTransactions(
-                txRes.Where(x => x.Status == Status.Mined).Select(x => x.TransactionId), block.Header.GetDisambiguationHash()
+                txRes.Where(x => x.Status == Status.Mined).Select(x => x.TransactionId),
+                block.Header.GetDisambiguationHash()
             );
         }
 
@@ -369,6 +406,16 @@ namespace AElf.Synchronization.BlockExecution
         }
     }
 
+    internal class InvalidCrossChainInfoException : Exception
+    {
+        public BlockExecutionResult Result { get;}
+
+        public InvalidCrossChainInfoException(string message, BlockExecutionResult result) : base(message)
+        {
+            Result = result;
+        }
+    }
+    
     internal class InvalidBlockException : Exception
     {
         public InvalidBlockException(string message) : base(message)

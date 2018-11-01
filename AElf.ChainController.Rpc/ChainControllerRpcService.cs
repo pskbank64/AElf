@@ -6,7 +6,9 @@ using AElf.ChainController.EventMessages;
 using AElf.Configuration;
 using AElf.Kernel;
 using AElf.Common;
+using AElf.Database;
 using AElf.Kernel.Managers;
+using AElf.Kernel.Types;
 using AElf.Miner.EventMessages;
 using AElf.Miner.TxMemPool;
 using AElf.Node.AElfChain;
@@ -18,7 +20,10 @@ using Easy.MessageHub;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Google.Protobuf;
+using Newtonsoft.Json.Serialization;
 using NLog;
+using NServiceKit.Text;
+using ServiceStack.Templates;
 
 namespace AElf.ChainController.Rpc
 {
@@ -30,14 +35,13 @@ namespace AElf.ChainController.Rpc
         public IChainService ChainService { get; set; }
         public IChainContextService ChainContextService { get; set; }
         public IChainCreationService ChainCreationService { get; set; }
-        public ITxPool TxPool { get; set; }
-        public ITransactionManager TransactionManager { get; set; }
+        public ITxHub TxHub { get; set; }
         public ITransactionResultService TransactionResultService { get; set; }
         public ITransactionTraceManager TransactionTraceManager { get; set; }
         public ISmartContractService SmartContractService { get; set; }
-        public TxHub TxHub { get; set; }
         public INodeService MainchainNodeService { get; set; }
         public ICrossChainInfo CrossChainInfo { get; set; }
+        public IKeyValueDatabase KeyValueDatabase { get; set; }
 
         #endregion Properties
 
@@ -208,22 +212,23 @@ namespace AElf.ChainController.Rpc
                 return await Task.FromResult(res);
             }
             
-            try
-            {
-                var valRes = await TxPool.AddTxAsync(transaction);
-                if (valRes == TxValidation.TxInsertionAndBroadcastingError.Success)
-                {
-                    MessageHub.Instance.Publish(new TransactionAddedToPool(transaction));
-                }
-                else
-                {
-                    res["error"] = valRes.ToString();
-                }
-            }
-            catch (Exception e)
-            {
-                res["error"] = e.ToString();
-            }
+//            try
+//            {
+            // TODO: Wait validation done
+                await TxHub.AddTransactionAsync(transaction);
+//                if (valRes == TxValidation.TxInsertionAndBroadcastingError.Success)
+//                {
+//                    MessageHub.Instance.Publish(new TransactionAddedToPool(transaction));
+//                }
+//                else
+//                {
+//                    res["error"] = valRes.ToString();
+//                }
+//            }
+//            catch (Exception e)
+//            {
+//                res["error"] = e.ToString();
+//            }
 
             return await Task.FromResult(res);
         }
@@ -361,7 +366,6 @@ namespace AElf.ChainController.Rpc
             try
             {
                 var transaction = await this.GetTransaction(txHash);
-                var txnStatus = this.GetTransactionHolder(txHash)?.Status;
 
                 var txInfo = transaction == null
                     ? new JObject {["tx"] = "Not Found"}
@@ -373,7 +377,6 @@ namespace AElf.ChainController.Rpc
                 var txResult = await this.GetTransactionResult(txHash);
                 var response = new JObject
                 {
-                    ["tx_s"] = txnStatus?.ToString(),
                     ["tx_status"] = txResult.Status.ToString(),
                     ["tx_info"] = txInfo["tx"]
                 };
@@ -458,7 +461,7 @@ namespace AElf.ChainController.Rpc
                     ["Body"] = new JObject
                     {
                         ["TransactionsCount"] = blockinfo.Body.TransactionsCount,
-                        ["IndexedSideChainBlcokInfo"] = blockinfo.GetIndexedSideChainBlcokInfo()
+                        ["IndexedSideChainBlcokInfo"] = blockinfo.GetIndexedSideChainBlockInfo()
                     },
                     ["CurrentTransactionPoolSize"] = transactionPoolSize
                 }
@@ -545,6 +548,86 @@ namespace AElf.ChainController.Rpc
         }
 
         #endregion Admin
+        
+        [JsonRpcMethod("get_db_value","key")]
+        public async Task<JObject> GetDbValue(string key)
+        {
+            string type = string.Empty;
+            JToken id;
+            try
+            {
+                var valueBytes = KeyValueDatabase.GetAsync(key).Result;
+
+                object value;
+
+                if (key.StartsWith(GlobalConfig.StatePrefix))
+                {
+                    type = "State";
+                    id = key.Substring(GlobalConfig.StatePrefix.Length, key.Length - GlobalConfig.StatePrefix.Length);
+                    value = StateValue.Create(valueBytes);
+                }
+                else if(key.StartsWith(GlobalConfig.TransactionReceiptPrefix))
+                {
+                    type = "TransactionReceipt";
+                    id = key.Substring(GlobalConfig.TransactionReceiptPrefix.Length, key.Length - GlobalConfig.TransactionReceiptPrefix.Length);
+                    value = valueBytes?.Deserialize<TransactionReceipt>();
+                }
+                else
+                {
+                    var keyObj = Key.Parser.ParseFrom(ByteArrayHelpers.FromHexString(key));
+                    type = keyObj.Type;
+                    id = JObject.Parse(keyObj.ToString());
+                    var obj = GetInstance(type);
+                    obj.MergeFrom(valueBytes);
+                    value = obj;
+                }
+
+                var response = new JObject
+                {
+                    ["Type"] = type,
+                    ["Id"] = id,
+                    ["Value"] = JObject.Parse(value.ToString())
+                };
+
+                return JObject.FromObject(response);
+            }
+            catch (Exception e)
+            {
+                var response = new JObject
+                {
+                    ["Type"]=type,
+                    ["Value"] = e.Message
+                };
+                return JObject.FromObject(response);
+            }
+        }
+
+        private IMessage GetInstance(string type)
+        {
+            switch (type)
+            {
+                case "MerklePath":
+                    return new MerklePath();
+                case "BinaryMerkleTree":
+                    return new BinaryMerkleTree ();
+                case "BlockHeader":
+                    return new BlockHeader();
+                case "BlockBody":
+                    return new BlockBody();
+                case "Hash":
+                    return new Hash();
+                case "SmartContractRegistration":
+                    return new SmartContractRegistration();
+                case "Transaction":
+                    return new Transaction();
+                case "TransactionResult":
+                    return new TransactionResult();
+                case "TransactionTrace":
+                    return new TransactionTrace();
+                default:
+                    throw new ArgumentException($"[{type}] not found");
+            }
+        }
 
         #endregion Methods
     }
