@@ -42,7 +42,7 @@ namespace AElf.Kernel.Storages
                 }
 
                 var key = GetKey(path);
-                _logger.Info("[##StatePath-M1]: Key-[{0}], Length-[{1}], Value-[{2}]", key, value.Length, value);
+                _logger.Info("[##StatePath-M1]: Key-[{0}], Length-[{1}], Value-[{2}]", key, value.Length, StateValue.Create(value));
                 await _keyValueDatabase.SetAsync(key, value);
             }
             catch (Exception e)
@@ -80,7 +80,7 @@ namespace AElf.Kernel.Storages
                 var dict = pipelineSet.ToDictionary(kv => GetKey(kv.Key), kv => kv.Value);
                 foreach (var key in dict.Keys)
                 {
-                    _logger.Info("[##StatePath-M2]: Key-[{0}], Length-[{1}], Value-[{2}]", key, dict[key].Length, dict[key]);
+                    _logger.Info("[##StatePath-M2]: Key-[{0}], Length-[{1}], Value-[{2}]", key, dict[key].Length, StateValue.Create(dict[key]));
                 }
 
                 return await _keyValueDatabase.PipelineSetAsync(dict);
