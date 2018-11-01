@@ -7,16 +7,19 @@ using AElf.Common;
 using AElf.Database;
 using AElf.Kernel.Types;
 using Google.Protobuf;
+using NLog;
 
 namespace AElf.Kernel.Storages
 {
     public class StateStore : IStateStore
     {
         private readonly IKeyValueDatabase _keyValueDatabase;
+        private readonly ILogger _logger;
 
         public StateStore(IKeyValueDatabase keyValueDatabase)
         {
             _keyValueDatabase = keyValueDatabase;
+            _logger = LogManager.GetLogger(nameof(DataStore));
         }
 
         private static string GetKey(StatePath path)
@@ -39,6 +42,7 @@ namespace AElf.Kernel.Storages
                 }
 
                 var key = GetKey(path);
+                _logger.Info("[##StatePath-M1]: Key-[{0}], Length-[{1}], Value-[{2}]", key, value.Length, value);
                 await _keyValueDatabase.SetAsync(key, value);
             }
             catch (Exception e)
@@ -74,6 +78,11 @@ namespace AElf.Kernel.Storages
             try
             {
                 var dict = pipelineSet.ToDictionary(kv => GetKey(kv.Key), kv => kv.Value);
+                foreach (var key in dict.Keys)
+                {
+                    _logger.Info("[##StatePath-M2]: Key-[{0}], Length-[{1}], Value-[{2}]", key, dict[key].Length, dict[key]);
+                }
+
                 return await _keyValueDatabase.PipelineSetAsync(dict);
             }
             catch (Exception e)
