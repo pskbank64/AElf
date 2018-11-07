@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AnalysisConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonarsource.com/msbuild/integration/2015/1">
+  <SonarConfigDir>/Users/ericshu/Github/aelf-automation-test/AElf/.sonarqube/conf</SonarConfigDir>
+  <SonarOutputDir>/Users/ericshu/Github/aelf-automation-test/AElf/.sonarqube/out</SonarOutputDir>
+  <SonarBinDir>/Users/ericshu/Github/aelf-automation-test/AElf/.sonarqube/bin</SonarBinDir>
+  <SonarScannerWorkingDirectory>/Users/ericshu/Github/aelf-automation-test/AElf</SonarScannerWorkingDirectory>
+  <HasBeginStepCommandLineCredentials>true</HasBeginStepCommandLineCredentials>
+  <SonarQubeHostUrl>http://127.0.0.1:9000</SonarQubeHostUrl>
+  <SonarQubeVersion>7.2.1.14109</SonarQubeVersion>
+  <SonarProjectKey>AElf</SonarProjectKey>
+  <AdditionalConfig>
+    <ConfigSetting Id="BuildUri" />
+    <ConfigSetting Id="TfsUri" />
+    <ConfigSetting Id="settings.file.path" Value="/Users/ericshu/.dotnet/tools/.store/dotnet-sonarscanner/4.3.1/dotnet-sonarscanner/4.3.1/tools/netcoreapp2.1/any/SonarQube.Analysis.xml" />
+  </AdditionalConfig>
+  <ServerSettings>
+    <Property Name="sonaranalyzer-cs.nuget.packageVersion">7.2.0.5463</Property>
+    <Property Name="sonar.cs.ignoreHeaderComments">true</Property>
+    <Property Name="sonar.typescript.file.suffixes">.ts,.tsx</Property>
+    <Property Name="sonar.auth.github.enabled">true</Property>
+    <Property Name="sonar.javascript.jQueryObjectAliases">$, jQuery</Property>
+    <Property Name="codecracker.csharp.cs.pluginKey">codecrackercsharp</Property>
+    <Property Name="sonar.go.file.suffixes">.go</Property>
+    <Property Name="codecracker.csharp.cs.nuget.packageId">codecracker.CSharp</Property>
+    <Property Name="email.fromName">SonarQube</Property>
+    <Property Name="sonar.python.xunit.skipDetails">false</Property>
+    <Property Name="sonar.dbcleaner.weeksBeforeKeepingOnlyAnalysesWithVersion">104</Property>
+    <Property Name="sonar.go.exclusions">**/vendor/**</Property>
+    <Property Name="sonar.forceAuthentication">false</Property>
+    <Property Name="widget.smells.title">Code Smells</Property>
+    <Property Name="sonar.notifications.delay">60</Property>
+    <Property Name="sonar.github.endpoint">https://api.github.com</Property>
+    <Property Name="citymodel.render.colorExp">num2col(({complexity}+1)/({functions}+1),0,10)</Property>
+    <Property Name="sonar.flex.file.suffixes">as</Property>
+    <Property Name="sonar.auth.github.apiUrl">https://api.github.com/</Property>
+    <Property Name="sonar.auth.github.allowUsersToSignUp">true</Property>
+    <Property Name="sonaranalyzer-cs.ruleNamespace">SonarAnalyzer.CSharp</Property>
+    <Property Name="sonar.python.xunit.reportPath">xunit-reports/xunit-result-*.xml</Property>
+    <Property Name="sonar.builtInQualityProfiles.disableNotificationOnUpdate">false</Property>
+    <Property Name="sonar.javascript.globals">angular,goog,google,OpenLayers,d3,dojo,dojox,dijit,Backbone,moment,casper</Property>
+    <Property Name="sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay">24</Property>
+    <Property Name="codecracker.csharp.cs.pluginVersion">1.0.1</Property>
+    <Property Name="sonar.javascript.exclusions">**/node_modules/**,**/bower_components/**</Property>
+    <Property Name="sonar.java.failOnException">false</Property>
+    <Property Name="sonar.organizations.createPersonalOrg">false</Property>
+    <Property Name="sonar.auth.github.webUrl">https://github.com/</Property>
+    <Property Name="sonar.dbcleaner.cleanDirectory">true</Property>
+    <Property Name="sonar.onboardingTutorial.showToNewUsers">false</Property>
+    <Property Name="sonar.jacoco.reportPaths">target/jacoco.exec, target/jacoco-it.exec</Property>
+    <Property Name="sonar.cpd.cross_project">false</Property>
+    <Property Name="email.from">noreply@nowhere</Property>
+    <Property Name="sonar.typescript.node">node</Property>
+    <Property Name="sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek">4</Property>
+    <Property Name="sonar.leak.period">previous_version</Property>
+    <Property Name="sonar.auth.github.groupsSync">false</Property>
+    <Property Name="email.prefix">[SONARQUBE]</Property>
+    <Property Name="sonaranalyzer-cs.pluginKey">csharp</Property>
+    <Property Name="sonar.auth.github.loginStrategy">Unique</Property>
+    <Property Name="citymodel.render.depthExp">2*Math.sqrt({functions}+1)</Property>
+    <Property Name="sonar.javascript.ignoreHeaderComments">true</Property>
+    <Property Name="sonar.dbcleaner.daysBeforeDeletingClosedIssues">30</Property>
+    <Property Name="sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth">52</Property>
+    <Property Name="sonar.lf.gravatarServerUrl">https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&amp;d=identicon</Property>
+    <Property Name="citymodel.autoRotate">true</Property>
+    <Property Name="codecracker.csharp.cs.nuget.packageVersion">1.0.1</Property>
+    <Property Name="codecracker.csharp.cs.analyzerId">codecracker.CSharp</Property>
+    <Property Name="sonaranalyzer-cs.staticResourceName">SonarAnalyzer-7.2.0.5463.zip</Property>
+    <Property Name="sonar.notifications.runningDelayBeforeReportingStatus">600</Property>
+    <Property Name="sonaranalyzer-cs.nuget.packageId">SonarAnalyzer.CSharp</Property>
+    <Property Name="sonar.javascript.environments">amd, applescript, atomtest, browser, commonjs, couch, embertest, flow, greasemonkey, jasmine, jest, jquery, meteor, mocha, mongo, nashorn, node, phantomjs, prototypejs, protractor, qunit, rhino, serviceworker, shared-node-browser, shelljs, webextensions, worker, wsh, yui</Property>
+    <Property Name="sonar.authenticator.downcase">false</Property>
+    <Property Name="sonar.github.disableInlineComments">false</Property>
+    <Property Name="citymodel.oneBuildingPerProject">true</Property>
+    <Property Name="sonar.scm.disabled">false</Property>
+    <Property Name="sonar.python.coverage.reportPath">coverage-reports/*coverage-*.xml</Property>
+    <Property Name="citymodel.render.widthExp">2*Math.sqrt({functions}+1)</Property>
+    <Property Name="sonar.typescript.exclusions">**/node_modules/**,**/bower_components/**</Property>
+    <Property Name="citymodel.render.heightExp">Math.pow(Math.E-0.4,Math.log({ncloc}/3))</Property>
+    <Property Name="sonaranalyzer-cs.analyzerId">SonarAnalyzer.CSharp</Property>
+    <Property Name="codecracker.csharp.cs.staticResourceName">codecracker.CSharp.1.0.1.zip</Property>
+    <Property Name="sonar.organizations.anyoneCanCreate">false</Property>
+    <Property Name="sonar.technicalDebt.ratingGrid">0.05,0.1,0.2,0.5</Property>
+    <Property Name="sonar.technicalDebt.developmentCost">30</Property>
+    <Property Name="sonar.lf.enableGravatar">false</Property>
+    <Property Name="sonar.preview.excludePlugins">devcockpit,pdfreport,governance,ldap,authaad,authgithub,authbitbucket,googleanalytics</Property>
+    <Property Name="sonar.python.file.suffixes">py</Property>
+    <Property Name="sonaranalyzer-cs.pluginVersion">7.2.0.5463</Property>
+    <Property Name="sonar.cs.file.suffixes">.cs</Property>
+    <Property Name="sonar.javascript.file.suffixes">.js,.jsx,.vue</Property>
+    <Property Name="sonar.java.file.suffixes">.java,.jav</Property>
+    <Property Name="sonar.php.file.suffixes">php,php3,php4,php5,phtml,inc</Property>
+    <Property Name="sonar.xml.file.suffixes">.xml,.xsd,.xsl</Property>
+    <Property Name="sonar.dbcleaner.weeksBeforeDeletingAllSnapshots">260</Property>
+    <Property Name="sonar.java.collectAnalysisErrors">false</Property>
+    <Property Name="codecracker.csharp.cs.ruleNamespace">codecracker.CSharp</Property>
+    <Property Name="sonar.updatecenter.url">https://update.sonarsource.org/update-center.properties</Property>
+    <Property Name="sonar.core.id">AWSDOhWl738HGEmqQWRE</Property>
+    <Property Name="sonar.core.startTime">2018/11/6 上午10:04:48</Property>
+  </ServerSettings>
+  <LocalSettings>
+    <Property Name="sonar.host.url">http://127.0.0.1:9000</Property>
+  </LocalSettings>
+  <AnalyzersSettings>
+    <AnalyzerSettings>
+      <Language>cs</Language>
+      <RuleSetFilePath>/Users/ericshu/Github/aelf-automation-test/AElf/.sonarqube/conf/SonarQubeRoslyn-cs.ruleset</RuleSetFilePath>
+      <AnalyzerAssemblyPaths>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/0/Google.Protobuf.dll</Path>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/0/SonarAnalyzer.dll</Path>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/0/SonarAnalyzer.CSharp.dll</Path>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/1/tools\uninstall.ps1</Path>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/1/analyzers\dotnet\cs\CodeCracker.Common.dll</Path>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/1/tools\install.ps1</Path>
+        <Path>/var/folders/3h/vllrdvjx6wb_f9n2n0g66xw40000gn/T/.sonarqube/resources/1/analyzers\dotnet\cs\CodeCracker.CSharp.dll</Path>
+      </AnalyzerAssemblyPaths>
+      <AdditionalFilePaths>
+        <Path>/Users/ericshu/Github/aelf-automation-test/AElf/.sonarqube/conf/cs/SonarLint.xml</Path>
+      </AdditionalFilePaths>
+    </AnalyzerSettings>
+  </AnalyzersSettings>
+</AnalysisConfig>

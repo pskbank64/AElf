@@ -16,6 +16,8 @@ namespace AElf.Kernel.Storages
         private readonly IKeyValueDatabase _keyValueDatabase;
         private readonly ILogger _logger;
 
+        private const string _dbName = "State";
+
         public StateStore(IKeyValueDatabase keyValueDatabase)
         {
             _keyValueDatabase = keyValueDatabase;
@@ -42,8 +44,8 @@ namespace AElf.Kernel.Storages
                 }
 
                 var key = GetKey(path);
-                _logger.Info("[##StatePath-M1]: Key-[{0}], Length-[{1}], Value-[{2}]", key, value.Length, StateValue.Create(value));
-                await _keyValueDatabase.SetAsync(key, value);
+                _logger.Info("[##StateStore]: Type-[{0}], Key-[{1}], Length-[{2}], Value-[{3}]", "StatePath", key, value.Length, StateValue.Create(value));
+                await _keyValueDatabase.SetAsync(_dbName,key, value);
             }
             catch (Exception e)
             {
@@ -62,7 +64,7 @@ namespace AElf.Kernel.Storages
                 }
 
                 var key = GetKey(path);
-                var res = await _keyValueDatabase.GetAsync(key);
+                var res = await _keyValueDatabase.GetAsync(_dbName,key);
 //                return res ?? new byte[0];
                 return res;
             }
@@ -80,10 +82,10 @@ namespace AElf.Kernel.Storages
                 var dict = pipelineSet.ToDictionary(kv => GetKey(kv.Key), kv => kv.Value);
                 foreach (var key in dict.Keys)
                 {
-                    _logger.Info("[##StatePath-M2]: Key-[{0}], Length-[{1}], Value-[{2}]", key, dict[key].Length, StateValue.Create(dict[key]));
+                    _logger.Info("[##StateStore]: Type-[{0}], Key-[{1}], Length-[{2}], Value-[{3}]", "StatePath", key, dict[key].Length, StateValue.Create(dict[key]));
                 }
 
-                return await _keyValueDatabase.PipelineSetAsync(dict);
+                return await _keyValueDatabase.PipelineSetAsync(_dbName,dict);
             }
             catch (Exception e)
             {

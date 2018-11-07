@@ -38,9 +38,8 @@ namespace AElf.Kernel.Storages
                 }
 
                 var key = pointerHash.GetKeyString(typeof(T).Name);
-                _logger.Info("[##KeyType1]: {0}", typeof(T).Name);
-                _logger.Info("[##DB-M1]: Key-[{0}], Length-[{1}], Value-[{2}]", key, obj.ToByteArray().Length, obj);
-                await _keyValueDatabase.SetAsync(key, obj.ToByteArray());
+                _logger.Info("[##DataStore]: Type-[{0}], Key-[{1}], Length-[{2}], Value-[{3}]",typeof(T).Name, key, obj.ToByteArray().Length, obj);
+                await _keyValueDatabase.SetAsync("Default", key, obj.ToByteArray());
             }
             catch (Exception e)
             {
@@ -64,9 +63,7 @@ namespace AElf.Kernel.Storages
                 }
 
                 var key = pointerHash.GetKeyString(typeof(byte[]).Name);
-                _logger.Info("[##KeyType2]: {0}", typeof(byte[]).Name);
-                _logger.Info("[##DB-M2]: Key-[{0}], Length-[{1}], Value-[{2}]", key, obj.Length, obj);
-                await _keyValueDatabase.SetAsync(key, obj);
+                await _keyValueDatabase.SetAsync("Default", key, obj);
             }
             catch (Exception e)
             {
@@ -84,8 +81,9 @@ namespace AElf.Kernel.Storages
                     throw new Exception("Pointer hash cannot be null.");
                 }
                 
+                var typeName = typeof(T).Name;
                 var key = pointerHash.GetKeyString(typeof(T).Name);
-                var res = await _keyValueDatabase.GetAsync(key);
+                var res = await _keyValueDatabase.GetAsync(typeName,key);
                 return  res == null ? default(T): res.Deserialize<T>();
             }
             catch (Exception e)
@@ -105,26 +103,12 @@ namespace AElf.Kernel.Storages
                 }
                 
                 var key = pointerHash.GetKeyString(typeof(byte[]).Name);
-                return await _keyValueDatabase.GetAsync(key);
+                return await _keyValueDatabase.GetAsync("Default", key);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
-            }
-        }
-
-        public async Task<bool> PipelineSetDataAsync(Dictionary<Hash, byte[]> pipelineSet)
-        {
-            try
-            {
-                return await _keyValueDatabase.PipelineSetAsync(
-                    pipelineSet.ToDictionary(kv => kv.Key.GetKeyString(typeof(byte[]).Name), kv => kv.Value));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return false;
             }
         }
 
@@ -137,8 +121,9 @@ namespace AElf.Kernel.Storages
                     throw new Exception("Pointer hash cannot be null.");
                 }
 
-                var key = pointerHash.GetKeyString(typeof(T).Name);
-                await _keyValueDatabase.RemoveAsync(key);
+                var typeName = typeof(T).Name;
+                var key = pointerHash.GetKeyString(typeName);
+                await _keyValueDatabase.RemoveAsync(typeName,key);
             }
             catch (Exception e)
             {

@@ -9,6 +9,7 @@ using AElf.Common;
 using AElf.Common.Attributes;
 using AElf.Common.Enums;
 using AElf.Configuration;
+using AElf.Configuration.Config.Chain;
 using AElf.Configuration.Config.Consensus;
 using AElf.Kernel;
 using AElf.Kernel.Node;
@@ -36,11 +37,9 @@ namespace AElf.Node.AElfChain
         private readonly ITxHub _txHub;
         private readonly IStateStore _stateStore;
         private readonly IMiner _miner;
-        private readonly IP2P _p2p;
         private readonly IChainService _chainService;
         private readonly IChainCreationService _chainCreationService;
         private readonly IBlockSynchronizer _blockSynchronizer;
-        private readonly IBlockExecutor _blockExecutor;
 
         private IBlockChain _blockChain;
         private IConsensus _consensus;
@@ -55,8 +54,6 @@ namespace AElf.Node.AElfChain
             IBlockSynchronizer blockSynchronizer,
             IChainService chainService,
             IMiner miner,
-            IP2P p2p,
-            IBlockExecutor blockExecutor,
             ILogger logger)
         {
             _stateStore = stateStore;
@@ -64,9 +61,7 @@ namespace AElf.Node.AElfChain
             _chainService = chainService;
             _txHub = hub;
             _logger = logger;
-            _blockExecutor = blockExecutor;
             _miner = miner;
-            _p2p = p2p;
             _blockSynchronizer = blockSynchronizer;
         }
 
@@ -141,7 +136,7 @@ namespace AElf.Node.AElfChain
         public void Initialize(NodeConfiguration conf)
         {
             _assemblyDir = conf.LauncherAssemblyLocation;
-            _blockChain = _chainService.GetBlockChain(Hash.LoadHex(NodeConfig.Instance.ChainId));
+            _blockChain = _chainService.GetBlockChain(Hash.LoadHex(ChainConfig.Instance.ChainId));
             NodeConfig.Instance.ECKeyPair = conf.KeyPair;
 
             SetupConsensus();
@@ -151,60 +146,18 @@ namespace AElf.Node.AElfChain
                 await _txHub.AddTransactionAsync(inTx.Transaction);
             });
 
-            MessageHub.Instance.Subscribe<UpdateConsensus>(option =>
-            {
-                if (option == UpdateConsensus.Update)
-                {
-                    _logger?.Trace("Will update consensus.");
-                    _consensus?.Update();
-                }
-
-                if (option == UpdateConsensus.Dispose)
-                {
-                    _logger?.Trace("Will stop mining.");
-                    _consensus?.Stop();
-                }
-            });
-
-            MessageHub.Instance.Subscribe<SyncStateChanged>(inState =>
-            {
-                if (inState.IsSyncing)
-                {
-                    _logger?.Trace("Will hang on mining due to starting syncing.");
-                    _consensus?.Hang();
-                }
-                else
-                {
-                    _logger?.Trace("Will start / recover mining.");
-                    _consensus?.Start();
-                }
-            });
-
-            MessageHub.Instance.Subscribe<ConsensusGenerated>(inState =>
-            {
-                if (inState.IsGenerated)
-                {
-                    _logger?.Trace("Will hang on mining due to starting syncing.");
-                    _consensus?.Hang();
-                }
-                else
-                {
-                    _logger?.Trace("Will start / recover mining.");
-                    _consensus?.Start();
-                }
-            });
             _txHub.Initialize();
         }
 
         public bool Start()
         {
-            if (string.IsNullOrWhiteSpace(NodeConfig.Instance.ChainId))
+            if (string.IsNullOrWhiteSpace(ChainConfig.Instance.ChainId))
             {
                 _logger?.Error("No chain id.");
                 return false;
             }
 
-            _logger?.Info($"Chain Id = {NodeConfig.Instance.ChainId}");
+            _logger?.Info($"Chain Id = {ChainConfig.Instance.ChainId}");
 
             #region setup
 
@@ -225,7 +178,7 @@ namespace AElf.Node.AElfChain
             }
             catch (Exception e)
             {
-                _logger?.Error(e, $"Could not create the chain : {NodeConfig.Instance.ChainId}.");
+                _logger?.Error(e, $"Could not create the chain : {ChainConfig.Instance.ChainId}.");
             }
 
             #endregion setup
@@ -233,16 +186,12 @@ namespace AElf.Node.AElfChain
             #region start
 
             _txHub.Start();
-            _blockExecutor.Init();
 
             if (NodeConfig.Instance.IsMiner)
             {
                 _miner.Init();
                 _logger?.Debug($"Coinbase = {_miner.Coinbase.DumpHex()}");
             }
-
-            // todo maybe move
-            Task.Run(async () => await _p2p.ProcessLoop()).ConfigureAwait(false);
 
             Thread.Sleep(1000);
 
@@ -255,14 +204,9 @@ namespace AElf.Node.AElfChain
 
             MessageHub.Instance.Subscribe<BlockReceived>(async inBlock =>
             {
-                _logger?.Trace($"Receive block of height {inBlock.Block.Index} - {inBlock.Block.BlockHashToHex}");
                 await _blockSynchronizer.ReceiveBlock(inBlock.Block);
             });
 
-            MessageHub.Instance.Subscribe<BlockMined>(inBlock =>
-            {
-                _blockSynchronizer.AddMinedBlock(inBlock.Block);
-            });
             #endregion start
 
             MessageHub.Instance.Publish(new ChainInitialized(null));
@@ -290,7 +234,7 @@ namespace AElf.Node.AElfChain
 
         private Address GetGenesisContractHash(SmartContractType contractType)
         {
-            return _chainCreationService.GenesisContractHash(Hash.LoadHex(NodeConfig.Instance.ChainId), contractType);
+            return _chainCreationService.GenesisContractHash(Hash.LoadHex(ChainConfig.Instance.ChainId), contractType);
         }
 
         private void LogGenesisContractInfo()
@@ -342,7 +286,7 @@ namespace AElf.Node.AElfChain
                 ContractHash = Hash.FromRawBytes(sideChainGenesisContractCode),
                 Type = (int) SmartContractType.SideChainContract
             };
-            var res = _chainCreationService.CreateNewChainAsync(Hash.LoadHex(NodeConfig.Instance.ChainId),
+            var res = _chainCreationService.CreateNewChainAsync(Hash.LoadHex(ChainConfig.Instance.ChainId),
                 new List<SmartContractRegistration> {basicReg, tokenCReg, consensusCReg, sideChainCReg}).Result;
 
             _logger?.Debug($"Genesis block hash = {res.GenesisBlockHash.DumpHex()}");
@@ -359,7 +303,7 @@ namespace AElf.Node.AElfChain
             switch (ConsensusConfig.Instance.ConsensusType)
             {
                 case ConsensusType.AElfDPoS:
-                    _consensus = new DPoS(_stateStore, _txHub, _miner, _chainService);
+                    _consensus = new DPoS(_stateStore, _txHub, _miner, _chainService, _blockSynchronizer);
                     break;
 
                 case ConsensusType.PoTC:
@@ -383,20 +327,50 @@ namespace AElf.Node.AElfChain
 
         #endregion private methods
 
-        public int GetCurrentHeight()
+        public async Task<BlockHeaderList> GetBlockHeaderList(ulong index, int count)
         {
-            int height = 1;
-
-            try
+            return await _blockSynchronizer.GetBlockHeaderList(index, count);
+        }
+        
+        public async Task<Block> GetBlockAtHeight(int height)
+        {
+            if (height <= 0)
             {
-                height = (int) _blockChain.GetCurrentBlockHeightAsync().Result;
+                _logger?.Warn($"Cannot get block - height {height} is not valid.");
+                return null;
             }
-            catch (Exception e)
+            
+            var block = (Block) await _chainService.GetBlockChain(Hash.Default).GetBlockByHeightAsync((ulong)height);
+            return block != null ? await FillBlockWithTransactionList(block) : null;
+        }
+        
+        public async Task<Block> GetBlockFromHash(byte[] hash)
+        {
+            if (hash == null || hash.Length <= 0)
             {
-                _logger?.Error(e, "Exception while getting chain height.");
+                _logger?.Warn("Cannot get block - invalid hash.");
+                return null;
+            }
+            
+            return await GetBlockFromHash(Hash.LoadByteArray(hash));
+        }
+        
+        public async Task<Block> GetBlockFromHash(Hash hash)
+        {
+            var block = await Task.Run(() => (Block) _blockSynchronizer.GetBlockByHash(hash));
+            return block != null ? await FillBlockWithTransactionList(block) : null;
+        }
+        
+        private async Task<Block> FillBlockWithTransactionList(Block block)
+        {
+            block.Body.TransactionList.Clear();
+            foreach (var txId in block.Body.Transactions)
+            {
+                var r = await _txHub.GetReceiptAsync(txId);
+                block.Body.TransactionList.Add(r.Transaction);
             }
 
-            return height;
+            return block;
         }
     }
 }

@@ -1,0 +1,1 @@
+/Users/ericshu/Github/aelf-automation-test/AElf/.sonarqube/out/0

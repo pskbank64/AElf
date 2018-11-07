@@ -7,6 +7,7 @@ using AElf.ChainController;
 using AElf.ChainController.EventMessages;
 using AElf.Common;
 using AElf.Configuration;
+using AElf.Configuration.Config.Chain;
 using AElf.Kernel;
 using AElf.Kernel.Consensus;
 using AElf.Kernel.EventMessages;
@@ -35,7 +36,7 @@ namespace AElf.Miner.TxMemPool
 
         private IBlockChain BlockChain => _blockChain ??
                                           (_blockChain =
-                                              _chainService.GetBlockChain(Hash.LoadHex(NodeConfig.Instance.ChainId)));
+                                              _chainService.GetBlockChain(Hash.LoadHex(ChainConfig.Instance.ChainId)));
 
         private ulong _curHeight;
 
@@ -66,8 +67,6 @@ namespace AElf.Miner.TxMemPool
 
         public void Initialize()
         {
-            MessageHub.Instance.Subscribe<BlockMined>(async b => { await OnNewBlock((Block) b.Block); });
-            MessageHub.Instance.Subscribe<BlockExecuted>(async b => { await OnNewBlock((Block) b.Block); });
             MessageHub.Instance.Subscribe<BranchRolledBack>(async branch =>
                 await OnBranchRolledBack(branch.Blocks).ConfigureAwait(false));
         }
@@ -228,10 +227,10 @@ namespace AElf.Miner.TxMemPool
             var systemAddresses = new List<Address>()
             {
                 AddressHelpers.GetSystemContractAddress(
-                    Hash.LoadHex(NodeConfig.Instance.ChainId),
+                    Hash.LoadHex(ChainConfig.Instance.ChainId),
                     SmartContractType.AElfDPoS.ToString()),
                 AddressHelpers.GetSystemContractAddress(
-                    Hash.LoadHex(NodeConfig.Instance.ChainId),
+                    Hash.LoadHex(ChainConfig.Instance.ChainId),
                     SmartContractType.SideChainContract.ToString())
             };
             if (systemAddresses.Contains(tr.Transaction.To))
@@ -310,7 +309,7 @@ namespace AElf.Miner.TxMemPool
         }
 
         // Render transactions to expire, and purge old transactions (RefBlockValidPeriod + some buffer)
-        private async Task OnNewBlock(Block block)
+        public async Task OnNewBlock(Block block)
         {
             var blockHeader = block.Header;
             // TODO: Handle LIB
