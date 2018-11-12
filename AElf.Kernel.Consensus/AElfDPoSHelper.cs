@@ -525,7 +525,7 @@ namespace AElf.Kernel.Consensus
                 }
 
                 return
-                    infoOfOneRound + $"EBP TimeSlot of current round: {ExtraBlockTimeSlot.ToDateTime().ToLocalTime():u}\n"
+                    infoOfOneRound + $"EBP TimeSlot of current round: {ExtraBlockTimeSlot.ToDateTime().ToLocalTime():u}. "
                                    + $"Current Round : {CurrentRoundNumber.Value}";
             }
             catch (Exception e)

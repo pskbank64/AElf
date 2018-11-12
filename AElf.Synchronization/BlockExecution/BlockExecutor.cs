@@ -75,7 +75,6 @@ namespace AElf.Synchronization.BlockExecution
             }
 
             _logger?.Trace($"Executing block {block.GetHash()}");
-
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -153,8 +152,7 @@ namespace AElf.Synchronization.BlockExecution
                 MessageHub.Instance.Publish(new ExecutionStateChanged(false));
                 _current = null;
                 stopwatch.Stop();
-                _logger?.Info($"Execute block {block.BlockHashToHex} with txs {readyTxs.Count}, " +
-                              $"duration {stopwatch.ElapsedMilliseconds} ms.");
+                _logger.Info($"Performance-[ExecuteBlock]: transaction count: [{readyTxs.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
             }
         }
 
@@ -168,6 +166,9 @@ namespace AElf.Synchronization.BlockExecution
         private async Task<List<TransactionResult>> ExecuteTransactions(List<Transaction> readyTxs, Hash chainId,
             Hash disambiguationHash)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var traces = readyTxs.Count == 0
                 ? new List<TransactionTrace>()
                 : await _executingService.ExecuteAsync(readyTxs, chainId, Cts.Token, disambiguationHash);
@@ -195,6 +196,10 @@ namespace AElf.Synchronization.BlockExecution
 
                 results.Add(res);
             }
+
+            stopwatch.Stop();
+            _logger.Info($"Performance-[ExecuteTransactions]: transaction count: [{readyTxs.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
+
 
             return results;
         }
@@ -266,6 +271,9 @@ namespace AElf.Synchronization.BlockExecution
         /// <exception cref="InvalidCrossChainInfoException"></exception>
         private async Task<Tuple<BlockExecutionResult, List<Transaction>>> CollectTransactions(IBlock block)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             //string errorLog = null;
             var res = BlockExecutionResult.CollectTransactionsSuccess;
             var txs = block.Body.TransactionList.ToList();
@@ -296,6 +304,9 @@ namespace AElf.Synchronization.BlockExecution
                 res = BlockExecutionResult.TooManyTxsForParentChainBlock;
                 //errorLog = "More than one transaction to record parent chain block info.";
             }
+            stopwatch.Stop();
+            _logger.Info($"Performance-[CollectTransactions]: transaction count: [{readyTxs.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
+
 
             return new Tuple<BlockExecutionResult, List<Transaction>>(res, readyTxs);
         }
@@ -375,6 +386,8 @@ namespace AElf.Synchronization.BlockExecution
         /// <param name="block"></param>
         private async Task InsertTxs(List<Transaction> executedTxs, List<TransactionResult> txResults, IBlock block)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             var bn = block.Header.Index;
             var bh = block.Header.GetHash();
 
@@ -384,6 +397,8 @@ namespace AElf.Synchronization.BlockExecution
                 r.BlockHash = bh;
                 await _transactionResultManager.AddTransactionResultAsync(r);
             });
+            stopwatch.Stop();
+            _logger.Info($"Performance-[DB-InsertTxs]: transaction count: [{executedTxs.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
         }
 
         /// <summary>
@@ -422,6 +437,8 @@ namespace AElf.Synchronization.BlockExecution
 
         private async Task Rollback(IBlock block, IEnumerable<TransactionResult> txRes)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             if (block == null)
                 return;
             var blockChain = _chainService.GetBlockChain(block.Header.ChainId);
@@ -429,6 +446,8 @@ namespace AElf.Synchronization.BlockExecution
                 txRes.Where(x => x.Status == Status.Mined).Select(x => x.TransactionId),
                 block.Header.GetDisambiguationHash()
             );
+            stopwatch.Stop();
+            _logger.Info($"Performance-[Rollback]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
         }
 
         #endregion

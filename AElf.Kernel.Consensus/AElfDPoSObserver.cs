@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -46,22 +47,34 @@ namespace AElf.Kernel.Consensus
 
         public void OnNext(ConsensusBehavior value)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             switch (value)
             {
                 case ConsensusBehavior.NoOperationPerformed:
                     _logger?.Trace("DPoS NOP.");
+                    stopwatch.Stop();
+                    _logger.Info($"Performance-[NoOperationPerformed]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
                     break;
                 case ConsensusBehavior.InitializeAElfDPoS:
                     _miningWithInitializingAElfDPoSInformation();
+                    stopwatch.Stop();
+                    _logger.Info($"Performance-[InitializeAElfDPoS]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
                     break;
                 case ConsensusBehavior.PublishOutValueAndSignature:
                     _miningWithPublishingOutValueAndSignature();
+                    stopwatch.Stop();
+                    _logger.Info($"Performance-[PublishOutValueAndSignature]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
                     break;
                 case ConsensusBehavior.PublishInValue:
                     _publishInValue();
+                    stopwatch.Stop();
+                    _logger.Info($"Performance-[PublishInValue]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
                     break;
                 case ConsensusBehavior.UpdateAElfDPoS:
                     _miningWithUpdatingAElfDPoSInformation();
+                    stopwatch.Stop();
+                    _logger.Info($"Performance-[UpdateAElfDPoS]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
                     break;
             }
         }

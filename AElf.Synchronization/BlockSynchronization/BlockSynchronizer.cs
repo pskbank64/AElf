@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -183,6 +184,9 @@ namespace AElf.Synchronization.BlockSynchronization
 
         private async Task<BlockExecutionResult> HandleValidBlock(IBlock block)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             _logger?.Trace($"Valid block {block.BlockHashToHex}.");
 
             _blockSet.AddBlock(block);
@@ -212,7 +216,7 @@ namespace AElf.Synchronization.BlockSynchronization
             if (executionResult.CanExecuteAgain())
             {
                 // No need to rollback:
-                // Receive again to execute the same block.
+                // packetReceive again to execute the same block.
 
                 if (_minedBlock && !_executingRemainingBlocks)
                 {
@@ -277,6 +281,9 @@ namespace AElf.Synchronization.BlockSynchronization
             {
                 await ExecuteRemainingBlocks(_firstFutureBlockHeight);
             }
+
+            stopwatch.Stop();
+            _logger.Info($"Performance-[HandleValidBlock]: transaction count: [{block.Body.TransactionsCount}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
 
             return BlockExecutionResult.Success;
         }

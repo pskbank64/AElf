@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -56,7 +57,10 @@ namespace AElf.Network.Connection
             {
                 while (true)
                 {
-                    // Read type 
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
+
+                    // Read type
                     int type = await ReadByte();
 
                     // Read if the message is associated with an id
@@ -112,6 +116,9 @@ namespace AElf.Network.Connection
                                 message = new Message {Type = type, HasId = false, Length = allData.Length, Payload = allData};
                             }
 
+                            stopwatch.Stop();
+                            _logger.Info($"Performance-[MessageRead]: Buffered byte length: [{length}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
+
                             FireMessageReceivedEvent(message);
                         }
                     }
@@ -131,6 +138,9 @@ namespace AElf.Network.Connection
                         {
                             message = new Message {Type = type, HasId = false, Length = length, Payload = packetData};
                         }
+
+                        stopwatch.Stop();
+                        _logger.Info($"Performance-[MessageRead]: byte length: [{length}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
 
                         FireMessageReceivedEvent(message);
                     }

@@ -111,6 +111,7 @@ namespace AElf.Miner.Miner
                 }
 
                 ExtractTransactionResults(readyTxs, traces, out var executed, out var rollback, out var results);
+                _logger.Info($"Rollback: transaction count: {rollback.Count}");
                 var block = await GenerateBlockAsync(Config.ChainId, results);
 
                 // validate block before appending
@@ -365,6 +366,9 @@ namespace AElf.Miner.Miner
         private void Update(List<Transaction> executedTxs, List<TransactionResult> txResults, IBlock block,
             ParentChainBlockInfo parentChainBlockInfo, Transaction pcbTransaction)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var bn = block.Header.Index;
             var bh = block.Header.GetHash();
             txResults.AsParallel().ForEach(async r =>
@@ -387,6 +391,9 @@ namespace AElf.Miner.Miner
             if (block.Body.IndexedInfo.Count > 0)
                 _binaryMerkleTreeManager.AddSideChainTransactionRootsMerkleTreeAsync(
                     block.Body.BinaryMerkleTreeForSideChainTransactionRoots, Config.ChainId, block.Header.Index);
+
+            stopwatch.Stop();
+            _logger.Info($"Performance-[UpdateDB]: transaction update count: [{txResults.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -97,7 +98,7 @@ namespace AElf.Network.Connection
                     _logger?.Warn("Cannot write a null message.");
                     continue;
                 }
-                
+
                 try
                 {
                     if (p.Payload.Length > MaxOutboundPacketSize)
@@ -116,7 +117,7 @@ namespace AElf.Network.Connection
                         // Send without splitting
                         SendPacketFromMessage(p);
                     }
-                    
+
                     job.SuccessCallback?.Invoke(p);
                 }
                 catch (Exception e) when (e is IOException || e is ObjectDisposedException)
