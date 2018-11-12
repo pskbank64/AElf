@@ -274,3 +274,4 @@ slnx.sqlite
 *plugin
 *Grpc.cs
 ChainInfo.json
+*.rdb
