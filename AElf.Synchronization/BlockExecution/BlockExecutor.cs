@@ -167,6 +167,8 @@ namespace AElf.Synchronization.BlockExecution
                     return res;
                 }
                 await UpdateCrossChainInfo(block, txnRes);
+
+                MessageHub.Instance.Publish(StateEvent.StateUpdated);
                 await AppendBlock(block);
                 InsertTxs(txnRes, block);
 
@@ -194,9 +196,7 @@ namespace AElf.Synchronization.BlockExecution
                     MessageHub.Instance.Publish(new TerminatedModule(TerminatedModuleEnum.BlockExecutor));
                 }
                 stopwatch.Stop();
-                _logger?.Info($"Executed block {block.BlockHashToHex} with result {res}, {block.Body.Transactions.Count} txns, " +
-                              $"duration {stopwatch.ElapsedMilliseconds} ms.");
-                _logger.Info($"Performance-[ExecuteBlock]: transaction count: [{readyTxs.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
+                _logger.Info($"Performance-[ExecuteBlock]: block height: {block.Index}, transaction count: [{readyTxs.Count}], spent time: [{stopwatch.ElapsedMilliseconds}ms]");
             }
         }
 
@@ -441,7 +441,7 @@ namespace AElf.Synchronization.BlockExecution
         /// <param name="block"></param>
         /// <param name="txnRes"></param>
         /// <returns></returns>
-        private async Task UpdateCrossChainInfo(IBlock block, List<TransactionResult> txnRes)
+        private async Task TxRefBlockValidatorUpdateCrossChainInfo(IBlock block, List<TransactionResult> txnRes)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();

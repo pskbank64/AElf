@@ -153,7 +153,8 @@ namespace AElf.Miner.TxMemPool
         {
             var trs = new List<TransactionReceipt>();
             // TODO: Check if parallelization is needed
-            long verifyTime = 0;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             foreach (var txn in transactions)
             {
                 if (!_allTxns.TryGetValue(txn.GetHash(), out var tr))
@@ -162,17 +163,14 @@ namespace AElf.Miner.TxMemPool
                     _allTxns.TryAdd(tr.TransactionId, tr);
                 }
 
-                Stopwatch watch = new Stopwatch();
-                watch.Start();
                 VerifySignature(tr);
-                watch.Stop();
-                verifyTime += watch.ElapsedMilliseconds;
                 await ValidateRefBlock(tr);
 
                 trs.Add(tr);
             }
 
-            _logger?.Info($"Verify transactions with {transactions.Count()} txs, duration {verifyTime} ms.");
+            stopwatch.Stop();
+            _logger.Info($"Performance-[GetReceiptsForAsync]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
 
             return trs;
         }

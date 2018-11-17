@@ -54,7 +54,6 @@ namespace AElf.Kernel.Consensus
                 case ConsensusBehavior.NoOperationPerformed:
                     _logger?.Trace("DPoS NOP.");
                     stopwatch.Stop();
-                    _logger.Info($"Performance-[NoOperationPerformed]: spent time: [{stopwatch.ElapsedMilliseconds}ms]");
                     break;
                 case ConsensusBehavior.InitializeAElfDPoS:
                     _miningWithInitializingAElfDPoSInformation();
