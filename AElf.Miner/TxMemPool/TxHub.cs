@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.ChainController;
-using AElf.ChainController.EventMessages;
 using AElf.Common;
-using AElf.Configuration;
 using AElf.Configuration.Config.Chain;
 using AElf.Kernel;
 using AElf.Kernel.Consensus;
 using AElf.Kernel.EventMessages;
 using AElf.Kernel.Managers;
+using AElf.Kernel.Types.Common;
 using AElf.Miner.EventMessages;
 using AElf.Miner.TxMemPool.RefBlockExceptions;
 using Easy.MessageHub;
 using NLog;
-using Org.BouncyCastle.Crypto.Engines;
 
 namespace AElf.Miner.TxMemPool
 {
@@ -37,6 +36,8 @@ namespace AElf.Miner.TxMemPool
         private IBlockChain BlockChain => _blockChain ??
                                           (_blockChain =
                                               _chainService.GetBlockChain(Hash.LoadHex(ChainConfig.Instance.ChainId)));
+        
+        private static bool _terminated;
 
         private ulong _curHeight;
 
@@ -53,6 +54,19 @@ namespace AElf.Miner.TxMemPool
             }
         }
 
+        private static Address DPosContractAddress =>
+            AddressHelpers.GetSystemContractAddress(Hash.LoadHex(ChainConfig.Instance.ChainId),
+                SmartContractType.AElfDPoS.ToString());
+
+        private static Address SideChainContractAddress =>
+            AddressHelpers.GetSystemContractAddress(Hash.LoadHex(ChainConfig.Instance.ChainId),
+                SmartContractType.SideChainContract.ToString());
+        
+        private readonly List<Address> _systemAddresses = new List<Address>()
+        {
+            DPosContractAddress, SideChainContractAddress
+        };
+
         public TxHub(ITransactionManager transactionManager, ITransactionReceiptManager receiptManager,
             IChainService chainService,
             ITxSignatureVerifier signatureVerifier,
@@ -63,12 +77,23 @@ namespace AElf.Miner.TxMemPool
             _chainService = chainService;
             _signatureVerifier = signatureVerifier;
             _refBlockValidator = refBlockValidator;
+
+            _terminated = false;
         }
 
         public void Initialize()
         {
             MessageHub.Instance.Subscribe<BranchRolledBack>(async branch =>
                 await OnBranchRolledBack(branch.Blocks).ConfigureAwait(false));
+            
+            MessageHub.Instance.Subscribe<TerminationSignal>(signal =>
+            {
+                if (signal.Module == TerminatedModuleEnum.TxPool)
+                {
+                    _terminated = true;
+                    MessageHub.Instance.Publish(new TerminatedModule(TerminatedModuleEnum.TxPool));
+                }
+            });
         }
 
         public void Start()
@@ -82,6 +107,11 @@ namespace AElf.Miner.TxMemPool
 
         public async Task AddTransactionAsync(Transaction transaction, bool skipValidation = false)
         {
+            if (_terminated)
+            {
+                return;
+            }
+
             var tr = new TransactionReceipt(transaction);
             if (skipValidation)
             {
@@ -123,6 +153,7 @@ namespace AElf.Miner.TxMemPool
         {
             var trs = new List<TransactionReceipt>();
             // TODO: Check if parallelization is needed
+            long verifyTime = 0;
             foreach (var txn in transactions)
             {
                 if (!_allTxns.TryGetValue(txn.GetHash(), out var tr))
@@ -131,11 +162,17 @@ namespace AElf.Miner.TxMemPool
                     _allTxns.TryAdd(tr.TransactionId, tr);
                 }
 
+                Stopwatch watch = new Stopwatch();
+                watch.Start();
                 VerifySignature(tr);
+                watch.Stop();
+                verifyTime += watch.ElapsedMilliseconds;
                 await ValidateRefBlock(tr);
 
                 trs.Add(tr);
             }
+
+            _logger?.Info($"Verify transactions with {transactions.Count()} txs, duration {verifyTime} ms.");
 
             return trs;
         }
@@ -174,7 +211,7 @@ namespace AElf.Miner.TxMemPool
                 return;
             }
             
-            if (tr.IsExecutable)
+            if (tr.IsExecutable && tr.ToBeBroadCasted)
             {
                 MessageHub.Instance.Publish(new TransactionAddedToPool(tr.Transaction));
             }
@@ -224,19 +261,15 @@ namespace AElf.Miner.TxMemPool
 
         private void IdentifyTransactionType(TransactionReceipt tr)
         {
-            var systemAddresses = new List<Address>()
-            {
-                AddressHelpers.GetSystemContractAddress(
-                    Hash.LoadHex(ChainConfig.Instance.ChainId),
-                    SmartContractType.AElfDPoS.ToString()),
-                AddressHelpers.GetSystemContractAddress(
-                    Hash.LoadHex(ChainConfig.Instance.ChainId),
-                    SmartContractType.SideChainContract.ToString())
-            };
-            if (systemAddresses.Contains(tr.Transaction.To))
+            if (_systemAddresses.Contains(tr.Transaction.To))
             {
                 tr.IsSystemTxn = true;
             }
+
+            // cross chain txn should not be  broadcasted
+            if (tr.Transaction.Type == TransactionType.CrossChainBlockInfoTransaction 
+                && SideChainContractAddress.Equals(tr.Transaction.To))
+                tr.ToBeBroadCasted = false;
         }
 
         #endregion Private Methods
@@ -351,7 +384,14 @@ namespace AElf.Miner.TxMemPool
                         var t = await _transactionManager.GetTransaction(txId);
                         tr = new TransactionReceipt(t);
                     }
-
+                    
+                    // cross chain type and dpos type transaction should not be reverted.
+                    if (tr.Transaction.Type == TransactionType.CrossChainBlockInfoTransaction
+                        && tr.Transaction.To.Equals(SideChainContractAddress) ||
+                        tr.Transaction.Type == TransactionType.DposTransaction
+                        && tr.Transaction.To.Equals(DPosContractAddress) && tr.Transaction.ShouldNotBroadcast())
+                        continue;
+                    
                     tr.SignatureSt = TransactionReceipt.Types.SignatureStatus.SignatureValid;
                     tr.Status = TransactionReceipt.Types.TransactionStatus.UnknownTransactionStatus;
                     tr.ExecutedBlockNumber = 0;
