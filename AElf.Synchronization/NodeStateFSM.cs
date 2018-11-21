@@ -19,7 +19,7 @@ namespace AElf.Synchronization
 
         private object _;
 
-        private Stopwatch sw = new Stopwatch();
+        private Stopwatch sw;
 
         public FSM Create()
         {
@@ -275,7 +275,8 @@ namespace AElf.Synchronization
         }
 
         private void WhenEnteringState()
-        {   sw.Start();
+        {   sw = new Stopwatch();
+            sw.Start();
             _logger?.Trace($"[NodeState] Entering State {((NodeState) _fsm.CurrentState).ToString()}");
             MessageHub.Instance.Publish(new EnteringState((NodeState) _fsm.CurrentState));
         }
