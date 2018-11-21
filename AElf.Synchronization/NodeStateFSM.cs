@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AElf.ChainController.EventMessages;
 using AElf.Common;
 using AElf.Common.FSM;
@@ -17,6 +18,8 @@ namespace AElf.Synchronization
         private bool _caught;
 
         private object _;
+
+        private Stopwatch sw;
 
         public FSM Create()
         {
@@ -272,13 +275,15 @@ namespace AElf.Synchronization
         }
 
         private void WhenEnteringState()
-        {
+        {   sw.Start();
             _logger?.Trace($"[NodeState] Entering State {((NodeState) _fsm.CurrentState).ToString()}");
             MessageHub.Instance.Publish(new EnteringState((NodeState) _fsm.CurrentState));
         }
 
         private void WhenLeavingState()
         {
+            sw.Stop();
+            _logger.Info($"NodeState-[{_fsm.CurrentState}]: {sw.ElapsedMilliseconds}");
             _logger?.Trace($"[NodeState] Leaving State {((NodeState) _fsm.CurrentState).ToString()}");
             MessageHub.Instance.Publish(new LeavingState((NodeState) _fsm.CurrentState));
         }
