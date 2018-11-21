@@ -19,7 +19,7 @@ namespace AElf.Synchronization
 
         private object _;
 
-        private Stopwatch sw;
+        private Stopwatch sw = new Stopwatch();
 
         public FSM Create()
         {
