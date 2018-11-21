@@ -283,7 +283,7 @@ namespace AElf.Synchronization
         private void WhenLeavingState()
         {
             sw.Stop();
-            _logger.Info($"NodeState-[{_fsm.CurrentState}]: {sw.ElapsedMilliseconds}");
+            _logger.Info($"NodeState-[{((NodeState) _fsm.CurrentState).ToString()}]: {sw.ElapsedMilliseconds}");
             _logger?.Trace($"[NodeState] Leaving State {((NodeState) _fsm.CurrentState).ToString()}");
             MessageHub.Instance.Publish(new LeavingState((NodeState) _fsm.CurrentState));
         }
