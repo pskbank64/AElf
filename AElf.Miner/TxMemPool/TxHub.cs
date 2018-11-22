@@ -163,7 +163,9 @@ namespace AElf.Miner.TxMemPool
                     _allTxns.TryAdd(tr.TransactionId, tr);
                 }
 
-                VerifySignature(tr);
+                //Remove signature verifications
+                //VerifySignature(tr);
+                tr.SignatureSt = TransactionReceipt.Types.SignatureStatus.SignatureValid;
                 await ValidateRefBlock(tr);
 
                 trs.Add(tr);
