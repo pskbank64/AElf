@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -488,6 +489,8 @@ namespace AElf.Node.Protocol
 
         private async Task ProcessPeerMessage(PeerMessageReceivedArgs args)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             if (args?.Peer == null)
             {
                 _logger.Warn("Peer is invalid.");
@@ -506,21 +509,33 @@ namespace AElf.Node.Protocol
             {
                 case AElfProtocolMsgType.Announcement:
                     HandleAnnouncement(args.Message, args.Peer);
+                    sw.Stop();
+                    _logger?.Info($"NMP-Anaouncement: {sw.ElapsedMilliseconds}ms");
                     break;
                 case AElfProtocolMsgType.Block:
                     MessageHub.Instance.Publish(new BlockReceived(args.Block));
+                    sw.Stop();
+                    _logger?.Info($"NMP-Block: {sw.ElapsedMilliseconds}ms");
                     break;
                 case AElfProtocolMsgType.NewTransaction:
                     HandleNewTransaction(args.Message);
+                    sw.Stop();
+                    _logger?.Info($"NMP-NewTransaction: {sw.ElapsedMilliseconds}ms");
                     break;
                 case AElfProtocolMsgType.Headers:
                     HandleHeaders(args.Message);
+                    sw.Stop();
+                    _logger?.Info($"NMP-Headers: {sw.ElapsedMilliseconds}ms");
                     break;
                 case AElfProtocolMsgType.RequestBlock:
                     await HandleBlockRequestJob(args);
+                    sw.Stop();
+                    _logger?.Info($"NMP-RequestBlock: {sw.ElapsedMilliseconds}ms");
                     break;
                 case AElfProtocolMsgType.HeaderRequest:
                     await HandleHeaderRequest(args);
+                    sw.Stop();
+                    _logger?.Info($"NMP-HeaderRequest: {sw.ElapsedMilliseconds}ms");
                     break;
             }
         }
