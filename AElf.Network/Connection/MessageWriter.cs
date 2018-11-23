@@ -108,12 +108,22 @@ namespace AElf.Network.Connection
                         //压缩测试1
                         Task.Run(() =>
                         {
+                            //Test1-Compress
                             var data = p.Payload;
                             var compressData1 = Compress(data);
-                            var decompressData1 = Decompress(compressData1);
+                            Decompress(compressData1);
 
+                            //Test2-Encode
                             var compressData2 = Encode(data);
-                            var decompressData2 = Decode(compressData2, data.Length);
+                            Decode(compressData2, data.Length);
+
+                            //Test3-ComplexCompress
+                            var compressData3 = ComplexCompress(data, out var length1);
+                            ComplexDecompress(compressData3, length1);
+
+                            //Test4-ComplexEncode
+                            var compressData4 = ComplexEncode(data, out var length2);
+                            ComplexDecode(compressData4, length2);
                         });
 
                         var partials = PayloadToPartials(p.Type, p.Payload, MaxOutboundPacketSize);
@@ -162,17 +172,6 @@ namespace AElf.Network.Connection
             {
                 byte[] slice = new byte[chunckSize];
                 Array.Copy(arrayToSplit, i*chunckSize, slice, 0, MaxOutboundPacketSize);
-
-                //压缩测试
-                Task.Run(()=>
-                {
-                    var data = slice;
-                    var compressSlice1 = Compress(data);
-                    Decompress(compressSlice1);
-
-                    var compressSlice2 = Encode(data);
-                    Decode(compressSlice2, data.Length);
-                });
 
                 var partial = new PartialPacket {
                     Type = msgType, Position = i, TotalDataSize = sourceArrayLength, Data = slice
@@ -267,7 +266,7 @@ namespace AElf.Network.Connection
                 ms.Close();
 
                 stopwatch.Stop();
-                _logger.Info($"Compress data: Before: {data.Length}, After: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
+                _logger.Info($"Compress: Before: {data.Length}, After: {buffer.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
 
                 return buffer;
             }
@@ -304,7 +303,7 @@ namespace AElf.Network.Connection
                 msreader.Close();
 
                 stopwatch.Stop();
-                _logger.Info($"Decompress data: Before: {data.Length}, After: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
+                _logger.Info($"Decompress: Before: {data.Length}, After: {buffer.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
 
                 return buffer;
             }
@@ -322,7 +321,7 @@ namespace AElf.Network.Connection
             var encoded = LZ4CodecHelper.Encode(data, 0, data.Length, LZ4Level.L00_FAST);
 
             stopwatch.Stop();
-            _logger.Info($"Encode: Before: {data.Length}, After: {encoded.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
+            _logger.Info($"Encode: Before: {data.Length}, After: {encoded.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
 
             return encoded;
         }
@@ -335,9 +334,133 @@ namespace AElf.Network.Connection
             var decoded = LZ4CodecHelper.Decode(data, 0, data.Length, targetLength);
 
             stopwatch.Stop();
-            _logger.Info($"Decode: Before: {data.Length}, After: {decoded.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
+            _logger.Info($"Decode: Before: {data.Length}, After: {decoded.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
 
             return decoded;
+        }
+
+        internal byte[] ComplexCompress(byte[] data, out int targetLength)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var encoded = LZ4CodecHelper.Encode(data, 0, data.Length, LZ4Level.L00_FAST);
+            targetLength = encoded.Length;
+
+            MemoryStream ms = new MemoryStream();
+            GZipStream zip = new GZipStream(ms, CompressionMode.Compress, true);
+            zip.Write(encoded, 0, targetLength);
+            zip.Close();
+            byte[] buffer = new byte[ms.Length];
+            ms.Position = 0;
+            ms.Read(buffer, 0, buffer.Length);
+            ms.Close();
+
+            stopwatch.Stop();
+            _logger.Info($"ComplexCompress: Before: {data.Length}, After: {buffer.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
+
+            return buffer;
+        }
+
+        internal byte[] ComplexDecompress(byte[] data, int targetLength)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            try
+            {
+                MemoryStream ms = new MemoryStream(data);
+                GZipStream zip = new GZipStream(ms, CompressionMode.Decompress, true);
+                MemoryStream msreader = new MemoryStream();
+                byte[] buffer = new byte[0x1000];
+                while (true)
+                {
+                    int reader = zip.Read(buffer, 0, buffer.Length);
+                    if (reader <= 0)
+                    {
+                        break;
+                    }
+                    msreader.Write(buffer, 0, reader);
+                }
+                zip.Close();
+                ms.Close();
+                msreader.Position = 0;
+                buffer = msreader.ToArray();
+                msreader.Close();
+
+                var decoded = LZ4CodecHelper.Decode(buffer, 0, buffer.Length, targetLength);
+
+                stopwatch.Stop();
+                _logger.Info($"ComplexDecompress: Before: {data.Length}, After: {decoded.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
+
+                return decoded;
+            }
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
+            }
+        }
+
+        internal byte[] ComplexEncode(byte[] data, out int targetLength)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            MemoryStream ms = new MemoryStream();
+            GZipStream zip = new GZipStream(ms, CompressionMode.Compress, true);
+            zip.Write(data, 0, data.Length);
+            zip.Close();
+            byte[] buffer = new byte[ms.Length];
+            ms.Position = 0;
+            ms.Read(buffer, 0, buffer.Length);
+            ms.Close();
+            targetLength = buffer.Length;
+
+            var encoded = LZ4CodecHelper.Encode(buffer, 0, buffer.Length, LZ4Level.L00_FAST);
+
+            stopwatch.Stop();
+            _logger.Info($"ComplexEncode: Before: {data.Length}, After: {encoded.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
+
+            return buffer;
+        }
+
+        internal byte[] ComplexDecode(byte[] data, int targetLength)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            try
+            {
+                var decoded = LZ4CodecHelper.Decode(data, 0, data.Length, targetLength);
+
+                MemoryStream ms = new MemoryStream(decoded);
+                GZipStream zip = new GZipStream(ms, CompressionMode.Decompress, true);
+                MemoryStream msreader = new MemoryStream();
+                byte[] buffer = new byte[0x1000];
+                while (true)
+                {
+                    int reader = zip.Read(buffer, 0, buffer.Length);
+                    if (reader <= 0)
+                    {
+                        break;
+                    }
+                    msreader.Write(buffer, 0, reader);
+                }
+                zip.Close();
+                ms.Close();
+                msreader.Position = 0;
+                buffer = msreader.ToArray();
+                msreader.Close();
+
+                stopwatch.Stop();
+                _logger.Info($"ComplexDecode data: Before: {data.Length}, After: {buffer.Length}, Time: {stopwatch.ElapsedMilliseconds}ms");
+
+                return decoded;
+            }
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
+            }
         }
 
         #region Closing and disposing
