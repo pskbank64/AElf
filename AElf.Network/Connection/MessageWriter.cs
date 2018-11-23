@@ -259,7 +259,7 @@ namespace AElf.Network.Connection
 
             GZipStream gZipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
 
-            byte[] bytes = new byte[20148];
+            byte[] bytes = new byte[20148000];
             int n;
             while ((n = gZipStream.Read(bytes, 0, bytes.Length)) != 0)
             {
