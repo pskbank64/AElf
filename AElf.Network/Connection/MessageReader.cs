@@ -250,6 +250,8 @@ namespace AElf.Network.Connection
 
             stopwatch.Stop();
             _logger.Info($"Decompress data: Before length:{data.Length}, After length: {decompressData.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
+
+            return decompressData;
         }
 
         #region Closing and disposing
