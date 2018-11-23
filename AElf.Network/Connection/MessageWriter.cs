@@ -108,22 +108,31 @@ namespace AElf.Network.Connection
                         //压缩测试1
                         Task.Run(() =>
                         {
-                            //Test1-Compress
                             var data = p.Payload;
-                            var compressData1 = Compress(data);
-                            Decompress(compressData1);
-
-                            //Test2-Encode
-                            var compressData2 = Encode(data);
-                            Decode(compressData2, data.Length);
-
-                            //Test3-ComplexCompress
-                            var compressData3 = ComplexCompress(data, out var length1);
-                            ComplexDecompress(compressData3, length1);
-
-                            //Test4-ComplexEncode
-                            var compressData4 = ComplexEncode(data, out var length2);
-                            ComplexDecode(compressData4, length2);
+                            Random rd = new Random();
+                            switch (rd.Next(1,4))
+                            {
+                                case 1:
+                                    //Test1-Compress
+                                    var compressData1 = Compress(data);
+                                    Decompress(compressData1);
+                                    break;
+                                case 2:
+                                    //Test2-Encode
+                                    var compressData2 = Encode(data);
+                                    Decode(compressData2, data.Length);
+                                    break;
+                                case 3:
+                                    //Test3-ComplexCompress
+                                    var compressData3 = ComplexCompress(data, out var length1);
+                                    ComplexDecompress(compressData3, length1);
+                                    break;
+                                case 4:
+                                    //Test4-ComplexEncode
+                                    var compressData4 = ComplexEncode(data, out var length2);
+                                    ComplexDecode(compressData4, length2);
+                                    break;
+                            }
                         });
 
                         var partials = PayloadToPartials(p.Type, p.Payload, MaxOutboundPacketSize);
