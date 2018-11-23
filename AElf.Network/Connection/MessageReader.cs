@@ -193,9 +193,6 @@ namespace AElf.Network.Connection
 
             // Read the data
             byte[] packetData = await ReadBytesAsync(dataLength);
-            if (partialPacket.IsCompress)
-                partialPacket.Data = Decompress(partialPacket.Data);
-
             partialPacket.Data = packetData;
 
             return partialPacket;

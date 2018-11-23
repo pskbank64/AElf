@@ -9,8 +9,8 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using AElf.Common;
+using K4os.Compression.LZ4;
 using NLog;
-using Org.BouncyCastle.Asn1.Cms;
 
 [assembly: InternalsVisibleTo("AElf.Network.Tests")]
 namespace AElf.Network.Connection
@@ -105,10 +105,17 @@ namespace AElf.Network.Connection
                 {
                     if (p.Payload.Length > MaxOutboundPacketSize)
                     {
-                        var compressData = Compress(p.Payload);
-                        var decompressData = Decompress(compressData);
-                        if(p.Payload == decompressData)
-                            _logger.Info("Compress and Decompress successful.");
+                        //压缩测试1
+                        Task.Run(() =>
+                        {
+                            var data = p.Payload;
+                            var compressData1 = Compress(data);
+                            var decompressData1 = Decompress(compressData1);
+
+                            var compressData2 = Encode(data);
+                            var decompressData2 = Decode(compressData2, data.Length);
+                        });
+
                         var partials = PayloadToPartials(p.Type, p.Payload, MaxOutboundPacketSize);
 
                         _logger?.Trace($"Message split into {partials.Count} packets.");
@@ -156,12 +163,19 @@ namespace AElf.Network.Connection
                 byte[] slice = new byte[chunckSize];
                 Array.Copy(arrayToSplit, i*chunckSize, slice, 0, MaxOutboundPacketSize);
 
-                //压缩
-                var compressSlice = Compress(slice);
-                Task.Run(()=>Decompress(compressSlice));
+                //压缩测试
+                Task.Run(()=>
+                {
+                    var data = slice;
+                    var compressSlice1 = Compress(data);
+                    Decompress(compressSlice1);
+
+                    var compressSlice2 = Encode(data);
+                    Decode(compressSlice2, data.Length);
+                });
 
                 var partial = new PartialPacket {
-                    Type = msgType, Position = i, TotalDataSize = sourceArrayLength, Data = compressSlice, IsCompress = true
+                    Type = msgType, Position = i, TotalDataSize = sourceArrayLength, Data = slice
                 };
                 
                 splitted.Add(partial);
@@ -173,7 +187,7 @@ namespace AElf.Network.Connection
                 Array.Copy(arrayToSplit, wholePacketCount*chunckSize, slice, 0, lastPacketSize);
                 
                 var partial = new PartialPacket {
-                    Type = msgType, Position = wholePacketCount, TotalDataSize = sourceArrayLength, Data = slice, IsCompress = false
+                    Type = msgType, Position = wholePacketCount, TotalDataSize = sourceArrayLength, Data = slice
                 };
                 
                 // Set last packet flag to this packet
@@ -253,7 +267,7 @@ namespace AElf.Network.Connection
                 ms.Close();
 
                 stopwatch.Stop();
-                _logger.Info($"Compress data: Before length:{data.Length}, After length: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
+                _logger.Info($"Compress data: Before: {data.Length}, After: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
 
                 return buffer;
             }
@@ -290,7 +304,7 @@ namespace AElf.Network.Connection
                 msreader.Close();
 
                 stopwatch.Stop();
-                _logger.Info($"Decompress data: Before length:{data.Length}, After length: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
+                _logger.Info($"Decompress data: Before: {data.Length}, After: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
 
                 return buffer;
             }
@@ -298,6 +312,32 @@ namespace AElf.Network.Connection
             {
                 throw new Exception(e.Message);
             }
+        }
+
+        internal byte[] Encode(byte[] data)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var encoded = LZ4CodecHelper.Encode(data, 0, data.Length, LZ4Level.L00_FAST);
+
+            stopwatch.Stop();
+            _logger.Info($"Encode: Before: {data.Length}, After: {encoded.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
+
+            return encoded;
+        }
+
+        internal byte[] Decode(byte[] data, int targetLength)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var decoded = LZ4CodecHelper.Decode(data, 0, data.Length, targetLength);
+
+            stopwatch.Stop();
+            _logger.Info($"Decode: Before: {data.Length}, After: {decoded.Length}, Compress time: {stopwatch.ElapsedMilliseconds}ms");
+
+            return decoded;
         }
 
         #region Closing and disposing
@@ -323,5 +363,36 @@ namespace AElf.Network.Connection
         }
 
         #endregion
+    }
+
+    public class LZ4CodecHelper
+    {
+        public static byte[] Encode(
+            byte[] source, int sourceIndex, int sourceLength, LZ4Level level)
+        {
+            var bufferLength = LZ4Codec.MaximumOutputSize(sourceLength);
+            var buffer = new byte[bufferLength];
+            var targetLength = LZ4Codec.Encode(
+                source, sourceIndex, sourceLength, buffer, 0, bufferLength, level);
+            if (targetLength == bufferLength)
+                return buffer;
+
+            var target = new byte[targetLength];
+            Buffer.BlockCopy(buffer, 0, target, 0, targetLength);
+            return target;
+        }
+
+        public static byte[] Decode(
+            byte[] source, int sourceIndex, int sourceLength, int targetLength)
+        {
+            var result = new byte[targetLength];
+            var decodedLength = LZ4Codec.Decode(
+                source, sourceIndex, sourceLength, result, 0, targetLength);
+            if (decodedLength != targetLength)
+                throw new ArgumentException(
+                    $"Decoded length does not match expected value: {decodedLength}/{targetLength}");
+
+            return result;
+        }
     }
 }
