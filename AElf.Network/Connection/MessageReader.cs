@@ -235,23 +235,36 @@ namespace AElf.Network.Connection
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            MemoryStream stream = new MemoryStream();
-
-            GZipStream gZipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
-
-            byte[] bytes = new byte[20148];
-            int n;
-            while ((n = gZipStream.Read(bytes, 0, bytes.Length)) != 0)
+            try
             {
-                stream.Write(bytes, 0, n);
+                MemoryStream ms = new MemoryStream(data);
+                GZipStream zip = new GZipStream(ms, CompressionMode.Decompress, true);
+                MemoryStream msreader = new MemoryStream();
+                byte[] buffer = new byte[0x1000];
+                while (true)
+                {
+                    int reader = zip.Read(buffer, 0, buffer.Length);
+                    if (reader <= 0)
+                    {
+                        break;
+                    }
+                    msreader.Write(buffer, 0, reader);
+                }
+                zip.Close();
+                ms.Close();
+                msreader.Position = 0;
+                buffer = msreader.ToArray();
+                msreader.Close();
+
+                stopwatch.Stop();
+                _logger.Info($"Decompress data: Before length:{data.Length}, After length: {buffer.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
+
+                return buffer;
             }
-            gZipStream.Close();
-            var decompressData =  stream.ToArray();
-
-            stopwatch.Stop();
-            _logger.Info($"Decompress data: Before length:{data.Length}, After length: {decompressData.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
-
-            return decompressData;
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
+            }
         }
 
         #region Closing and disposing
