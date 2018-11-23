@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using AElf.Common;
 using NLog;
+using Org.BouncyCastle.Asn1.Cms;
 
 [assembly: InternalsVisibleTo("AElf.Network.Tests")]
 namespace AElf.Network.Connection
@@ -104,8 +105,10 @@ namespace AElf.Network.Connection
                 {
                     if (p.Payload.Length > MaxOutboundPacketSize)
                     {
-                        Compress(p.Payload);
-                        Decompress(p.Payload);
+                        var compressData = Compress(p.Payload);
+                        var decompressData = Decompress(compressData);
+                        if(p.Payload == decompressData)
+                            _logger.Info("Compress and Decompress successful.");
                         var partials = PayloadToPartials(p.Type, p.Payload, MaxOutboundPacketSize);
 
                         _logger?.Trace($"Message split into {partials.Count} packets.");
