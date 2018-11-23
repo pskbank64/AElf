@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -149,9 +150,12 @@ namespace AElf.Network.Connection
             {
                 byte[] slice = new byte[chunckSize];
                 Array.Copy(arrayToSplit, i*chunckSize, slice, 0, MaxOutboundPacketSize);
-                
+
+                //压缩
+                var compressSlice = Compress(slice);
+
                 var partial = new PartialPacket {
-                    Type = msgType, Position = i, TotalDataSize = sourceArrayLength, Data = slice
+                    Type = msgType, Position = i, TotalDataSize = sourceArrayLength, Data = compressSlice, IsCompress = true
                 };
                 
                 splitted.Add(partial);
@@ -163,7 +167,7 @@ namespace AElf.Network.Connection
                 Array.Copy(arrayToSplit, wholePacketCount*chunckSize, slice, 0, lastPacketSize);
                 
                 var partial = new PartialPacket {
-                    Type = msgType, Position = wholePacketCount, TotalDataSize = sourceArrayLength, Data = slice
+                    Type = msgType, Position = wholePacketCount, TotalDataSize = sourceArrayLength, Data = slice, IsCompress = false
                 };
                 
                 // Set last packet flag to this packet
@@ -226,6 +230,24 @@ namespace AElf.Network.Connection
 
             _stream.Write(b, 0, b.Length);
         }
+
+        internal byte[] Compress(byte[] data)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            MemoryStream stream = new MemoryStream();
+            GZipStream gZipStream = new GZipStream(stream, CompressionMode.Compress);
+            gZipStream.Write(data, 0, data.Length);
+            gZipStream.Close();
+            byte[] compressData = stream.ToArray();
+
+            stopwatch.Stop();
+            _logger.Info($"Compress data: Before length:{data.Length}, After length: {compressData.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
+
+            return compressData;
+        }
+
+
 
         #region Closing and disposing
 

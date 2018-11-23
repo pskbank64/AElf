@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -192,6 +193,9 @@ namespace AElf.Network.Connection
 
             // Read the data
             byte[] packetData = await ReadBytesAsync(dataLength);
+            if (partialPacket.IsCompress)
+                partialPacket.Data = Decompress(partialPacket.Data);
+
             partialPacket.Data = packetData;
 
             return partialPacket;
@@ -224,6 +228,28 @@ namespace AElf.Network.Connection
             }
 
             return requestedBytes;
+        }
+
+        internal byte[] Decompress(byte[] data)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            MemoryStream stream = new MemoryStream();
+
+            GZipStream gZipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
+
+            byte[] bytes = new byte[20148];
+            int n;
+            while ((n = gZipStream.Read(bytes, 0, bytes.Length)) != 0)
+            {
+                stream.Write(bytes, 0, n);
+            }
+            gZipStream.Close();
+            var decompressData =  stream.ToArray();
+
+            stopwatch.Stop();
+            _logger.Info($"Decompress data: Before length:{data.Length}, After length: {decompressData.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
         }
 
         #region Closing and disposing
