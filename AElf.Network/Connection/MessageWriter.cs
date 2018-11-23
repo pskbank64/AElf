@@ -104,6 +104,8 @@ namespace AElf.Network.Connection
                 {
                     if (p.Payload.Length > MaxOutboundPacketSize)
                     {
+                        Compress(p.Payload);
+                        Decompress(p.Payload);
                         var partials = PayloadToPartials(p.Type, p.Payload, MaxOutboundPacketSize);
 
                         _logger?.Trace($"Message split into {partials.Count} packets.");
@@ -153,6 +155,7 @@ namespace AElf.Network.Connection
 
                 //压缩
                 var compressSlice = Compress(slice);
+                Task.Run(()=>Decompress(compressSlice));
 
                 var partial = new PartialPacket {
                     Type = msgType, Position = i, TotalDataSize = sourceArrayLength, Data = compressSlice, IsCompress = true
@@ -245,6 +248,30 @@ namespace AElf.Network.Connection
             _logger.Info($"Compress data: Before length:{data.Length}, After length: {compressData.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
 
             return compressData;
+        }
+
+        internal byte[] Decompress(byte[] data)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            MemoryStream stream = new MemoryStream();
+
+            GZipStream gZipStream = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
+
+            byte[] bytes = new byte[20148];
+            int n;
+            while ((n = gZipStream.Read(bytes, 0, bytes.Length)) != 0)
+            {
+                stream.Write(bytes, 0, n);
+            }
+            gZipStream.Close();
+            var decompressData =  stream.ToArray();
+
+            stopwatch.Stop();
+            _logger.Info($"Decompress data: Before length:{data.Length}, After length: {decompressData.Length}, Compress time: {stopwatch.ElapsedMilliseconds}");
+
+            return decompressData;
         }
 
 
