@@ -478,6 +478,7 @@ namespace AElf.Node.Protocol
                 try
                 {
                     PeerMessageReceivedArgs msg = _incomingJobs.Take();
+                    _logger.Info($"NMP: Current left job need to handle: {_incomingJobs.Count()}");
                     await ProcessPeerMessage(msg);
                 }
                 catch (Exception e)
