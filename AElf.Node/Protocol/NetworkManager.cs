@@ -521,7 +521,6 @@ namespace AElf.Node.Protocol
                 case AElfProtocolMsgType.NewTransaction:
                     HandleNewTransaction(args.Message);
                     sw.Stop();
-                    _logger?.Info($"NMP-NewTransaction: {sw.ElapsedMilliseconds}ms");
                     break;
                 case AElfProtocolMsgType.Headers:
                     HandleHeaders(args.Message);
