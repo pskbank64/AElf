@@ -10,13 +10,13 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Storages
 {
-    public class StateStore : IStateStore
+    public class StateDao : IStateDao
     {
         private readonly IKeyValueDatabase _keyValueDatabase;
         
         private const string _dbName = "State";
 
-        public StateStore(IKeyValueDatabase keyValueDatabase)
+        public StateDao(IKeyValueDatabase keyValueDatabase)
         {
             _keyValueDatabase = keyValueDatabase;
         }
@@ -61,7 +61,6 @@ namespace AElf.Kernel.Storages
 
                 var key = GetKey(path);
                 var res = await _keyValueDatabase.GetAsync(_dbName,key);
-//                return res ?? new byte[0];
                 return res;
             }
             catch (Exception e)

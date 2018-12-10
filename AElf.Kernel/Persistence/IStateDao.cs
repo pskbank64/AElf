@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace AElf.Kernel.Storages
 {
-    public interface IStateStore
+    public interface IStateDao
     {
         Task SetAsync(StatePath path, byte[] value);
 

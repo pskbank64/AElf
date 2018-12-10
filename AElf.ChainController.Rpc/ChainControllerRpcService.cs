@@ -39,7 +39,7 @@ namespace AElf.ChainController.Rpc
         public IChainCreationService ChainCreationService { get; set; }
         public ITxHub TxHub { get; set; }
         public ITransactionResultService TransactionResultService { get; set; }
-        public ITransactionTraceManager TransactionTraceManager { get; set; }
+        public ITransactionTraceDao TransactionTraceDao { get; set; }
         public ISmartContractService SmartContractService { get; set; }
         public INodeService MainchainNodeService { get; set; }
         public ICrossChainInfo CrossChainInfo { get; set; }

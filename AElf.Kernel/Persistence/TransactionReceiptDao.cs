@@ -9,13 +9,13 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Managers
 {
-    public class TransactionReceiptManager : ITransactionReceiptManager
+    public class TransactionReceiptDao : ITransactionReceiptDao
     {
         private readonly IKeyValueDatabase _database;
 
         private const string _dbName = "TransactionReceipt";
 
-        public TransactionReceiptManager(IKeyValueDatabase database)
+        public TransactionReceiptDao(IKeyValueDatabase database)
         {
             _database = database;
         }

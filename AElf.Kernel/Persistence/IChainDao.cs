@@ -4,7 +4,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Managers
 {
-    public interface IChainManagerBasic
+    public interface IChainDao
     {
         Task AddChainAsync(Hash chainId, Hash genesisBlockHash);
         Task<Hash> GetGenesisBlockHashAsync(Hash chainId);

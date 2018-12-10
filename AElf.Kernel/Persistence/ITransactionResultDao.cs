@@ -4,7 +4,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Managers
 {
-    public interface ITransactionResultManager
+    public interface ITransactionResultDao
     {
         Task AddTransactionResultAsync(TransactionResult tr);
         Task<TransactionResult> GetTransactionResultAsync(Hash txId);

@@ -31,14 +31,14 @@ namespace AElf.Synchronization.BlockExecution
     public class BlockExecutor : IBlockExecutor
     {
         private readonly IChainService _chainService;
-        private readonly ITransactionResultManager _transactionResultManager;
+        private readonly ITransactionResultDao _transactionResultDao;
         private readonly IExecutingService _executingService;
         private readonly ILogger _logger;
         private readonly ClientManager _clientManager;
-        private readonly IBinaryMerkleTreeManager _binaryMerkleTreeManager;
+        private readonly IBinaryMerkleTreeDao _binaryMerkleTreeDao;
         private readonly ITxHub _txHub;
-        private readonly IChainManagerBasic _chainManagerBasic;
-        private readonly IStateStore _stateStore;
+        private readonly IChainDao _chainDao;
+        private readonly IStateDao _stateDao;
         private readonly DPoSInfoProvider _dpoSInfoProvider;
 
         private static bool _executing;
@@ -48,18 +48,18 @@ namespace AElf.Synchronization.BlockExecution
         private static bool _isLimitExecutionTime;
 
         public BlockExecutor(IChainService chainService, IExecutingService executingService,
-            ITransactionResultManager transactionResultManager, ClientManager clientManager,
-            IBinaryMerkleTreeManager binaryMerkleTreeManager, ITxHub txHub, IChainManagerBasic chainManagerBasic, IStateStore stateStore)
+            ITransactionResultDao transactionResultDao, ClientManager clientManager,
+            IBinaryMerkleTreeDao binaryMerkleTreeDao, ITxHub txHub, IChainDao chainDao, IStateDao stateDao)
         {
             _chainService = chainService;
             _executingService = executingService;
-            _transactionResultManager = transactionResultManager;
+            _transactionResultDao = transactionResultDao;
             _clientManager = clientManager;
-            _binaryMerkleTreeManager = binaryMerkleTreeManager;
+            _binaryMerkleTreeDao = binaryMerkleTreeDao;
             _txHub = txHub;
-            _chainManagerBasic = chainManagerBasic;
-            _stateStore = stateStore;
-            _dpoSInfoProvider = new DPoSInfoProvider(_stateStore);
+            _chainDao = chainDao;
+            _stateDao = stateDao;
+            _dpoSInfoProvider = new DPoSInfoProvider(_stateDao);
 
             _logger = LogManager.GetLogger(nameof(BlockExecutor));
 
@@ -473,7 +473,7 @@ namespace AElf.Synchronization.BlockExecution
             {
                 r.BlockNumber = bn;
                 r.BlockHash = bh;
-                await _transactionResultManager.AddTransactionResultAsync(r);
+                await _transactionResultDao.AddTransactionResultAsync(r);
             });
         }
 
@@ -485,9 +485,9 @@ namespace AElf.Synchronization.BlockExecution
         /// <returns></returns>
         private async Task UpdateCrossChainInfo(IBlock block, List<TransactionResult> txnRes)
         {
-            await _binaryMerkleTreeManager.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree,
+            await _binaryMerkleTreeDao.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree,
                 block.Header.ChainId, block.Header.Index);
-            await _binaryMerkleTreeManager.AddSideChainTransactionRootsMerkleTreeAsync(
+            await _binaryMerkleTreeDao.AddSideChainTransactionRootsMerkleTreeAsync(
                 block.Body.BinaryMerkleTreeForSideChainTransactionRoots, block.Header.ChainId, block.Header.Index);
 
             // update side chain block info if execution succeed
@@ -497,7 +497,7 @@ namespace AElf.Synchronization.BlockExecution
                     // Todo: _clientManager would be chaos if this happened.
                     throw new InvalidCrossChainInfoException(
                         "Inconsistent side chain info. Something about side chain would be chaos if you see this. ", BlockExecutionResult.InvalidSideChainInfo);*/
-                await _chainManagerBasic.UpdateCurrentBlockHeightAsync(blockInfo.ChainId, blockInfo.Height);
+                await _chainDao.UpdateCurrentBlockHeightAsync(blockInfo.ChainId, blockInfo.Height);
             }
 
             // update parent chain info

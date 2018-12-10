@@ -17,22 +17,22 @@ namespace AElf.ChainController.CrossChain
             AddressHelpers.GetSystemContractAddress(Hash.LoadHex(ChainConfig.Instance.ChainId),
                 SmartContractType.SideChainContract.ToString());
 
-        private readonly IStateStore _stateStore;
+        private readonly IStateDao _stateDao;
 
         private DataProvider DataProvider
         {
             get
             {
                 var dp = DataProvider.GetRootDataProvider(_chainId, SideChainContractAddress);
-                dp.StateStore = _stateStore;
+                dp.StateDao = _stateDao;
                 return dp;
             }
         }
 
-        public CrossChainHelper(Hash chainId, IStateStore stateStore)
+        public CrossChainHelper(Hash chainId, IStateDao stateDao)
         {
             _chainId = chainId;
-            _stateStore = stateStore; 
+            _stateDao = stateDao; 
         }
 
         /// <summary>

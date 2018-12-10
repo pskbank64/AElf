@@ -4,7 +4,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Managers
 {
-    public interface ISmartContractManager
+    public interface ISmartContractDao
     {
         Task<SmartContractRegistration> GetAsync(Address contractAddress);
         Task InsertAsync(Address contractAddress, SmartContractRegistration reg);

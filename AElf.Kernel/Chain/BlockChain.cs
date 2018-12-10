@@ -16,23 +16,23 @@ namespace AElf.Kernel
 {
     public class BlockChain : LightChain, IBlockChain
     {
-        private readonly ITransactionManager _transactionManager;
-        private readonly ITransactionTraceManager _transactionTraceManager;
-        private readonly IStateStore _stateStore;
+        private readonly ITransactionDao _transactionDao;
+        private readonly ITransactionTraceDao _transactionTraceDao;
+        private readonly IStateDao _stateDao;
 
         private readonly ILogger _logger;
         private static bool _doingRollback;
         private static bool _prepareTerminated;
         private static bool _terminated;
 
-        public BlockChain(Hash chainId, IChainManagerBasic chainManager, IBlockManagerBasic blockManager,
-            ITransactionManager transactionManager, ITransactionTraceManager transactionTraceManager,
-            IStateStore stateStore, IDataStore dataStore) : base(
+        public BlockChain(Hash chainId, IChainDao chainManager, IBlockDao blockManager,
+            ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao,
+            IStateDao stateDao, IDataStore dataStore) : base(
             chainId, chainManager, blockManager, dataStore)
         {
-            _transactionManager = transactionManager;
-            _transactionTraceManager = transactionTraceManager;
-            _stateStore = stateStore;
+            _transactionDao = transactionDao;
+            _transactionTraceDao = transactionTraceDao;
+            _stateDao = stateDao;
 
             _doingRollback = false;
             _prepareTerminated = false;
@@ -137,7 +137,7 @@ namespace AElf.Kernel
                     var body = block.Body;
                     foreach (var txId in body.Transactions)
                     {
-                        var tx = await _transactionManager.GetTransaction(txId);
+                        var tx = await _transactionDao.GetTransaction(txId);
                         txs.Add(tx);
                     }
 
@@ -193,14 +193,14 @@ namespace AElf.Kernel
             var origValues = new Dictionary<StatePath, byte[]>();
             foreach (var txId in txIds.Reverse())
             {
-                var trace = await _transactionTraceManager.GetTransactionTraceAsync(txId, disambiguationHash);
+                var trace = await _transactionTraceDao.GetTransactionTraceAsync(txId, disambiguationHash);
                 foreach (var kv in trace.StateChanges)
                 {
                     origValues[kv.StatePath] = kv.StateValue.OriginalValue.ToByteArray();
                 }
             }
 
-            await _stateStore.PipelineSetDataAsync(origValues);
+            await _stateDao.PipelineSetDataAsync(origValues);
         }
     }
 }

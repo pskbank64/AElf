@@ -14,25 +14,25 @@ namespace AElf.ChainController
 {
     public class ChainService : IChainService
     {
-        private readonly IChainManagerBasic _chainManager;
-        private readonly IBlockManagerBasic _blockManager;
-        private readonly ITransactionManager _transactionManager;
-        private readonly ITransactionTraceManager _transactionTraceManager;
+        private readonly IChainDao _chainManager;
+        private readonly IBlockDao _blockManager;
+        private readonly ITransactionDao _transactionDao;
+        private readonly ITransactionTraceDao _transactionTraceDao;
         private readonly IDataStore _dataStore;
-        private readonly IStateStore _stateStore;
+        private readonly IStateDao _stateDao;
 
         private readonly ConcurrentDictionary<Hash, BlockChain> _blockchains = new ConcurrentDictionary<Hash, BlockChain>();
 
-        public ChainService(IChainManagerBasic chainManager, IBlockManagerBasic blockManager,
-            ITransactionManager transactionManager, ITransactionTraceManager transactionTraceManager, 
-            IDataStore dataStore, IStateStore stateStore)
+        public ChainService(IChainDao chainManager, IBlockDao blockManager,
+            ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao, 
+            IDataStore dataStore, IStateDao stateDao)
         {
             _chainManager = chainManager;
             _blockManager = blockManager;
-            _transactionManager = transactionManager;
-            _transactionTraceManager = transactionTraceManager;
+            _transactionDao = transactionDao;
+            _transactionTraceDao = transactionTraceDao;
             _dataStore = dataStore;
-            _stateStore = stateStore;
+            _stateDao = stateDao;
         }
 
         public IBlockChain GetBlockChain(Hash chainId)
@@ -48,8 +48,8 @@ namespace AElf.ChainController
                 return blockChain;
             }
 
-            blockChain = new BlockChain(chainId, _chainManager, _blockManager, _transactionManager,
-                _transactionTraceManager, _stateStore, _dataStore);
+            blockChain = new BlockChain(chainId, _chainManager, _blockManager, _transactionDao,
+                _transactionTraceDao, _stateDao, _dataStore);
             _blockchains.TryAdd(chainId, blockChain);
             return blockChain;
         }

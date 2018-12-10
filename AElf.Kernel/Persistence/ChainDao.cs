@@ -4,43 +4,48 @@ using AElf.Kernel.Storages;
 using Google.Protobuf.WellKnownTypes;
 using NLog;
 using AElf.Common;
+using AElf.Database;
+using AElf.Kernel.Types;
+using Google.Protobuf;
 
 namespace AElf.Kernel.Managers
 {
-    public class ChainManagerBasic : IChainManagerBasic
+    public class ChainDao : IChainDao
     {
-        private readonly IDataStore _dataStore;
+        private readonly IKeyValueDatabase _database;
         private readonly ILogger _logger;
+        private const string _dbName = "Chain";
         private readonly Hash _sideChainIdListKey = Hash.FromString("SideChainIdList");
 
-        public ChainManagerBasic(IDataStore dataStore, ILogger logger = null)
+        public ChainDao(IKeyValueDatabase database)
         {
-            _dataStore = dataStore;
-            _logger = logger;
+            _database = database;
+            _logger = LogManager.GetLogger(nameof(ChainDao));
         }
 
         public async Task AddChainAsync(Hash chainId, Hash genesisBlockHash)
         {
-            await _dataStore.InsertAsync(chainId.OfType(HashType.GenesisHash), genesisBlockHash);
+            await _database.SetAsync(_dbName, chainId.OfType(HashType.GenesisHash).DumpHex(), genesisBlockHash.ToByteArray());
             await UpdateCurrentBlockHashAsync(chainId, genesisBlockHash);
         }
 
         public async Task<Hash> GetGenesisBlockHashAsync(Hash chainId)
         {
-            return await _dataStore.GetAsync<Hash>(chainId.OfType(HashType.GenesisHash));
+            var data = await _database.GetAsync(_dbName,chainId.OfType(HashType.GenesisHash).DumpHex());
+            return data?.Deserialize<Hash>();
         }
 
         public async Task UpdateCurrentBlockHashAsync(Hash chainId, Hash blockHash)
         {
             var key = chainId.OfType(HashType.CurrentHash);
-            await _dataStore.InsertAsync(key, blockHash);
+            await _database.SetAsync(_dbName, key.DumpHex(), blockHash.ToByteArray());
         }
         
         public async Task<Hash> GetCurrentBlockHashAsync(Hash chainId)
         {
             var key = chainId.OfType(HashType.CurrentHash);
-            var hash = await _dataStore.GetAsync<Hash>(key);
-            return hash;
+            var data = await _database.GetAsync(_dbName, key.DumpHex());
+            return data?.Deserialize<Hash>();
         }
         
         /// <summary>
@@ -52,10 +57,10 @@ namespace AElf.Kernel.Managers
         public async Task UpdateCurrentBlockHeightAsync(Hash chainId, ulong height)
         {
             var key = chainId.OfType(HashType.ChainHeight);
-            await _dataStore.InsertAsync(key, new UInt64Value
+            await _database.SetAsync(_dbName, key.DumpHex(), new UInt64Value
             {
                 Value = height
-            });
+            }.ToByteArray());
         }
 
         /// <summary>
@@ -67,7 +72,8 @@ namespace AElf.Kernel.Managers
         public async Task<ulong> GetCurrentBlockHeightAsync(Hash chainId)
         {
             var key = chainId.OfType(HashType.ChainHeight);
-            var height = await _dataStore.GetAsync<UInt64Value>(key);
+            var data = await _database.GetAsync(_dbName, key.DumpHex());
+            var height = data?.Deserialize<UInt64Value>();
             return height?.Value ?? 0;
         }
         
@@ -76,12 +82,13 @@ namespace AElf.Kernel.Managers
             var idList = await GetSideChainIdList();
             idList = idList ?? new SideChainIdList();
             idList.ChainIds.Add(chainId);
-            await _dataStore.InsertAsync(_sideChainIdListKey, idList);
+            await _database.SetAsync(_dbName, _sideChainIdListKey.DumpHex(), idList.ToByteArray());
         }
 
         public async Task<SideChainIdList> GetSideChainIdList()
         {
-            return await _dataStore.GetAsync<SideChainIdList>(_sideChainIdListKey);
+            var data = await _database.GetAsync(_dbName, _sideChainIdListKey.DumpHex());
+            return data?.Deserialize<SideChainIdList>();
         }
     }
 }

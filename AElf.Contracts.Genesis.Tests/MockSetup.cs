@@ -16,6 +16,7 @@ using AElf.Execution;
 using Google.Protobuf;
 using ServiceStack;
 using AElf.Common;
+using AElf.Database;
 using AElf.Execution.Execution;
 
 namespace AElf.Contracts.Genesis.Tests
@@ -31,9 +32,9 @@ namespace AElf.Contracts.Genesis.Tests
             return (ulong)n;
         }
 
-        public IStateStore StateStore { get; }
+        public IStateDao StateDao { get; }
         public Hash ChainId1 { get; } = Hash.Generate();
-        public ISmartContractManager SmartContractManager;
+        public ISmartContractDao SmartContractDao;
         public ISmartContractService SmartContractService;
         private IFunctionMetadataService _functionMetadataService;
 
@@ -47,26 +48,30 @@ namespace AElf.Contracts.Genesis.Tests
 
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
 
-        public MockSetup(IStateStore stateStore, IChainCreationService chainCreationService,
+        private IKeyValueDatabase _database;
+
+        public MockSetup(IStateDao stateDao, IChainCreationService chainCreationService,
             IDataStore dataStore, IChainContextService chainContextService,
-            IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory)
+            IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory,
+            IKeyValueDatabase database)
         {
-            StateStore = stateStore;
+            StateDao = stateDao;
             _chainCreationService = chainCreationService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            SmartContractManager = new SmartContractManager(dataStore);
+            _database = database;
+            SmartContractDao = new SmartContractDao(_database);
             Task.Factory.StartNew(async () => { await Init(); }).Unwrap().Wait();
-            SmartContractService = new SmartContractService(SmartContractManager, _smartContractRunnerFactory,
-                stateStore, _functionMetadataService);
+            SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory,
+                stateDao, _functionMetadataService);
 
             ServicePack = new ServicePack()
             {
                 ChainContextService = chainContextService,
                 SmartContractService = SmartContractService,
                 ResourceDetectionService = null,
-                StateStore = stateStore
+                StateDao = stateDao
             };
          }
 

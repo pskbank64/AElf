@@ -39,16 +39,16 @@ namespace AElf.Miner.Miner
         private ECKeyPair _keyPair;
         private readonly IChainService _chainService;
         private readonly IExecutingService _executingService;
-        private readonly ITransactionResultManager _transactionResultManager;
+        private readonly ITransactionResultDao _transactionResultDao;
         private readonly ILogger _logger;
         private IBlockChain _blockChain;
         private readonly ClientManager _clientManager;
-        private readonly IBinaryMerkleTreeManager _binaryMerkleTreeManager;
+        private readonly IBinaryMerkleTreeDao _binaryMerkleTreeDao;
         private readonly ServerManager _serverManager;
         private readonly IBlockValidationService _blockValidationService;
         private readonly IChainContextService _chainContextService;
         private Address _producerAddress;
-        private readonly IChainManagerBasic _chainManagerBasic;
+        private readonly IChainDao _chainDao;
         private readonly DPoSInfoProvider _dpoSInfoProvider;
 
         private IMinerConfig Config { get; }
@@ -59,25 +59,25 @@ namespace AElf.Miner.Miner
         private readonly double _maxMineTime;
 
         public Miner(IMinerConfig config, ITxHub txHub, IChainService chainService,
-            IExecutingService executingService, ITransactionResultManager transactionResultManager,
+            IExecutingService executingService, ITransactionResultDao transactionResultDao,
             ILogger logger, ClientManager clientManager,
-            IBinaryMerkleTreeManager binaryMerkleTreeManager, ServerManager serverManager,
-            IBlockValidationService blockValidationService, IChainContextService chainContextService, IChainManagerBasic chainManagerBasic,IStateStore stateStore)
+            IBinaryMerkleTreeDao binaryMerkleTreeDao, ServerManager serverManager,
+            IBlockValidationService blockValidationService, IChainContextService chainContextService, IChainDao chainDao,IStateDao stateDao)
         {
             Config = config;
             _txHub = txHub;
             _chainService = chainService;
             _executingService = executingService;
-            _transactionResultManager = transactionResultManager;
+            _transactionResultDao = transactionResultDao;
             _logger = logger;
             _clientManager = clientManager;
-            _binaryMerkleTreeManager = binaryMerkleTreeManager;
+            _binaryMerkleTreeDao = binaryMerkleTreeDao;
             _serverManager = serverManager;
             _blockValidationService = blockValidationService;
             _chainContextService = chainContextService;
-            _chainManagerBasic = chainManagerBasic;
+            _chainDao = chainDao;
             _txFilter = new TransactionFilter();
-            _dpoSInfoProvider = new DPoSInfoProvider(stateStore);
+            _dpoSInfoProvider = new DPoSInfoProvider(stateDao);
 
             _maxMineTime = ConsensusConfig.Instance.DPoSMiningInterval * NodeConfig.Instance.RatioMine;
         }
@@ -348,13 +348,13 @@ namespace AElf.Miner.Miner
                 r.BlockNumber = bn;
                 r.BlockHash = bh;
                 r.MerklePath = block.Body.BinaryMerkleTree.GenerateMerklePath(r.Index);
-                await _transactionResultManager.AddTransactionResultAsync(r);
+                await _transactionResultDao.AddTransactionResultAsync(r);
             });
             // update merkle tree
-            _binaryMerkleTreeManager.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree, Config.ChainId,
+            _binaryMerkleTreeDao.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree, Config.ChainId,
                 block.Header.Index);
             if (block.Body.IndexedInfo.Count > 0)
-                _binaryMerkleTreeManager.AddSideChainTransactionRootsMerkleTreeAsync(
+                _binaryMerkleTreeDao.AddSideChainTransactionRootsMerkleTreeAsync(
                     block.Body.BinaryMerkleTreeForSideChainTransactionRoots, Config.ChainId, block.Header.Index);
         }
 

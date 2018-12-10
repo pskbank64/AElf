@@ -19,18 +19,18 @@ namespace AElf.SmartContract
 {
     public class SmartContractService : ISmartContractService
     {
-        private readonly ISmartContractManager _smartContractManager;
+        private readonly ISmartContractDao _smartContractDao;
         private readonly ISmartContractRunnerFactory _smartContractRunnerFactory;
         private readonly ConcurrentDictionary<Address, ConcurrentBag<IExecutive>> _executivePools = new ConcurrentDictionary<Address, ConcurrentBag<IExecutive>>();
-        private readonly IStateStore _stateStore;
+        private readonly IStateDao _stateDao;
         private readonly IFunctionMetadataService _functionMetadataService;
 
-        public SmartContractService(ISmartContractManager smartContractManager, ISmartContractRunnerFactory smartContractRunnerFactory, IStateStore stateStore,
+        public SmartContractService(ISmartContractDao smartContractDao, ISmartContractRunnerFactory smartContractRunnerFactory, IStateDao stateDao,
             IFunctionMetadataService functionMetadataService)
         {
-            _smartContractManager = smartContractManager;
+            _smartContractDao = smartContractDao;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            _stateStore = stateStore;
+            _stateDao = stateDao;
             _functionMetadataService = functionMetadataService;
         }
 
@@ -51,7 +51,7 @@ namespace AElf.SmartContract
                 return executive;
 
             // get registration
-            var reg = await _smartContractManager.GetAsync(contractAddress);
+            var reg = await _smartContractDao.GetAsync(contractAddress);
 
             // get runner
             var runner = _smartContractRunnerFactory.GetRunner(reg.Category);
@@ -63,12 +63,12 @@ namespace AElf.SmartContract
 
             // get account dataprovider
             var dataProvider = DataProvider.GetRootDataProvider(chainId, contractAddress);
-            dataProvider.StateStore = _stateStore;
+            dataProvider.StateDao = _stateDao;
             // run smartcontract executive info and return executive
 
             executive = await runner.RunAsync(reg);
 
-            executive.SetStateStore(_stateStore);
+            executive.SetStateStore(_stateDao);
             
             executive.SetSmartContractContext(new SmartContractContext()
             {
@@ -113,19 +113,19 @@ namespace AElf.SmartContract
                 await _functionMetadataService.DeployContract(chainId, contractAddress, contractTemplate);
             }
             
-            await _smartContractManager.InsertAsync(contractAddress, registration);
+            await _smartContractDao.InsertAsync(contractAddress, registration);
         }
 
         public async Task<IMessage> GetAbiAsync(Address account, string name = null)
         {
-            var reg = await _smartContractManager.GetAsync(account);
+            var reg = await _smartContractDao.GetAsync(account);
             return GetAbiAsync(reg, name);
         }
 
         /// <inheritdoc/>
         public async Task<IEnumerable<string>> GetInvokingParams(Transaction transaction)
         {
-            var reg = await _smartContractManager.GetAsync(transaction.To);
+            var reg = await _smartContractDao.GetAsync(transaction.To);
             var abi = (Module) GetAbiAsync(reg);
             
             // method info 

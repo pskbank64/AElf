@@ -25,8 +25,8 @@ namespace AElf.Miner.TxMemPool
     public class TxHub : ITxHub
     {
         private readonly ILogger _logger = LogManager.GetLogger(nameof(TxHub));
-        private readonly ITransactionManager _transactionManager;
-        private readonly ITransactionReceiptManager _receiptManager;
+        private readonly ITransactionDao _transactionDao;
+        private readonly ITransactionReceiptDao _receiptDao;
         private readonly ITxSignatureVerifier _signatureVerifier;
         private readonly ITxRefBlockValidator _refBlockValidator;
 
@@ -70,13 +70,13 @@ namespace AElf.Miner.TxMemPool
             DPosContractAddress, SideChainContractAddress
         };
 
-        public TxHub(ITransactionManager transactionManager, ITransactionReceiptManager receiptManager,
+        public TxHub(ITransactionDao transactionDao, ITransactionReceiptDao receiptDao,
             IChainService chainService,
             ITxSignatureVerifier signatureVerifier,
             ITxRefBlockValidator refBlockValidator)
         {
-            _transactionManager = transactionManager;
-            _receiptManager = receiptManager;
+            _transactionDao = transactionDao;
+            _receiptDao = receiptDao;
             _chainService = chainService;
             _signatureVerifier = signatureVerifier;
             _refBlockValidator = refBlockValidator;
@@ -122,7 +122,7 @@ namespace AElf.Miner.TxMemPool
                 tr.RefBlockSt = TransactionReceipt.Types.RefBlockStatus.RefBlockValid;
             }
 
-            var txn = await _transactionManager.GetTransaction(tr.TransactionId);
+            var txn = await _transactionDao.GetTransaction(tr.TransactionId);
 
             // if the transaction is in TransactionManager, it is either executed or added into _allTxns
             if (txn != null && !txn.Equals(new Transaction()))
@@ -182,7 +182,7 @@ namespace AElf.Miner.TxMemPool
         {
             if (!_allTxns.TryGetValue(txId, out var tr))
             {
-                tr = await _receiptManager.GetReceiptAsync(txId);
+                tr = await _receiptDao.GetReceiptAsync(txId);
             }
 
             return tr;
@@ -287,7 +287,7 @@ namespace AElf.Miner.TxMemPool
                 {
                     tr.Status = TransactionReceipt.Types.TransactionStatus.TransactionExecuted;
                     tr.ExecutedBlockNumber = blockNumber;
-                    _transactionManager.AddTransactionAsync(tr.Transaction);
+                    _transactionDao.AddTransactionAsync(tr.Transaction);
                     receipts.Add(tr);
                 }
                 else
@@ -296,7 +296,7 @@ namespace AElf.Miner.TxMemPool
                 }
             }
 
-            _receiptManager.AddOrUpdateReceiptsAsync(receipts);
+            _receiptDao.AddOrUpdateReceiptsAsync(receipts);
         }
 
         private void IdentifyExpiredTransactions()
@@ -380,7 +380,7 @@ namespace AElf.Miner.TxMemPool
                 {
                     if (!_allTxns.TryGetValue(txId, out var tr))
                     {
-                        var t = await _transactionManager.GetTransaction(txId);
+                        var t = await _transactionDao.GetTransaction(txId);
                         tr = new TransactionReceipt(t);
                     }
                     

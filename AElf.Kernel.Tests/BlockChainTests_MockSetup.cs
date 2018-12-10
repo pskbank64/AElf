@@ -16,6 +16,7 @@ using Google.Protobuf.WellKnownTypes;
 using Mono.Cecil.Cil;
 using NLog;
 using AElf.Common;
+using AElf.Database;
 using AElf.Execution.Execution;
 using Address = AElf.Common.Address;
 
@@ -34,7 +35,7 @@ namespace AElf.Kernel.Tests
         }
 
         public Hash ChainId1 { get; } = Hash.FromString("ChainId1");
-        public ISmartContractManager SmartContractManager;
+        public ISmartContractDao SmartContractDao;
         public ISmartContractService SmartContractService;
 
         public IChainContextService ChainContextService;
@@ -51,11 +52,10 @@ namespace AElf.Kernel.Tests
         private IFunctionMetadataService _functionMetadataService;
         private ILogger _logger;
 
-        private IStateStore _stateStore;
+        private IStateDao _stateDao;
         public IActorEnvironment ActorEnvironment { get; private set; }
 
-        private readonly HashManager _hashManager;
-        private readonly TransactionManager _transactionManager;
+        private readonly TransactionDao _transactionDao;
 
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
 
@@ -63,21 +63,21 @@ namespace AElf.Kernel.Tests
             IChainService chainService,
             IChainContextService chainContextService, IFunctionMetadataService functionMetadataService,
             ISmartContractRunnerFactory smartContractRunnerFactory, ILogger logger,
-            IStateStore stateStore, HashManager hashManager, TransactionManager transactionManager)
+            IStateDao stateDao, TransactionDao transactionDao,
+            IKeyValueDatabase database)
         {
             _logger = logger;
-            _stateStore = stateStore;
-            _hashManager = hashManager;
-            _transactionManager = transactionManager;
+            _stateDao = stateDao;
+            _transactionDao = transactionDao;
             _chainCreationService = chainCreationService;
             ChainService = chainService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            SmartContractManager = new SmartContractManager(dataStore);
+            SmartContractDao = new SmartContractDao(database);
             Task.Factory.StartNew(async () => { await Init(); }).Unwrap().Wait();
             SmartContractService =
-                new SmartContractService(SmartContractManager, _smartContractRunnerFactory, stateStore,
+                new SmartContractService(SmartContractDao, _smartContractRunnerFactory, stateDao,
                     functionMetadataService);
             Task.Factory.StartNew(async () => { await DeploySampleContracts(); }).Unwrap().Wait();
         }
@@ -113,7 +113,7 @@ namespace AElf.Kernel.Tests
 
         public async Task CommitTrace(TransactionTrace trace)
         {
-            await trace.CommitChangesAsync(_stateStore);
+            await trace.CommitChangesAsync(_stateDao);
         }
 
         public void Initialize1(Address account, ulong qty)

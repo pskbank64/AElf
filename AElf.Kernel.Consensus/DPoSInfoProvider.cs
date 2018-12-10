@@ -16,13 +16,13 @@ namespace AElf.Kernel.Consensus
     // ReSharper disable InconsistentNaming
     public class DPoSInfoProvider
     {
-        private readonly IStateStore _stateStore;
+        private readonly IStateDao _stateDao;
 
         private readonly ILogger _logger = LogManager.GetLogger(nameof(DPoSInfoProvider));
 
-        public DPoSInfoProvider(IStateStore stateStore)
+        public DPoSInfoProvider(IStateDao stateDao)
         {
-            _stateStore = stateStore;
+            _stateDao = stateDao;
         }
 
         public Hash ChainId => Hash.LoadHex(ChainConfig.Instance.ChainId);
@@ -35,7 +35,7 @@ namespace AElf.Kernel.Consensus
             get
             {
                 var dp = DataProvider.GetRootDataProvider(ChainId, ContractAddress);
-                dp.StateStore = _stateStore;
+                dp.StateDao = _stateDao;
                 return dp;
             }
         }

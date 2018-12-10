@@ -10,6 +10,7 @@ using AElf.Execution;
 using Google.Protobuf;
 using AElf.Kernel.Tests;
 using AElf.Common;
+using AElf.Database;
 using AElf.Execution.Execution;
 
 namespace AElf.Sdk.CSharp.Tests
@@ -26,13 +27,13 @@ namespace AElf.Sdk.CSharp.Tests
         }
 
         public Hash ChainId1 { get; } = Hash.Generate();
-        public ISmartContractManager SmartContractManager;
+        public ISmartContractDao SmartContractDao;
         public ISmartContractService SmartContractService;
         private IFunctionMetadataService _functionMetadataService;
 
         public IChainContextService ChainContextService;
 
-        public IStateStore StateStore;
+        public IStateDao StateDao;
         public DataProvider DataProvider1;
 
         public ServicePack ServicePack;
@@ -41,26 +42,26 @@ namespace AElf.Sdk.CSharp.Tests
 
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
 
-        public MockSetup(IStateStore stateStore, IChainCreationService chainCreationService, IDataStore dataStore, IChainContextService chainContextService, IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory)
+        public MockSetup(IStateDao stateDao, IChainCreationService chainCreationService, IDataStore dataStore, IChainContextService chainContextService, IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory, IKeyValueDatabase database)
         {
-            StateStore = stateStore;
+            StateDao = stateDao;
             _chainCreationService = chainCreationService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            SmartContractManager = new SmartContractManager(dataStore);
+            SmartContractDao = new SmartContractDao(database);
             Task.Factory.StartNew(async () =>
             {
                 await Init();
             }).Unwrap().Wait();
-            SmartContractService = new SmartContractService(SmartContractManager, _smartContractRunnerFactory, stateStore, _functionMetadataService);
+            SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory, stateDao, _functionMetadataService);
 
             ServicePack = new ServicePack()
             {
                 ChainContextService = chainContextService,
                 SmartContractService = SmartContractService,
                 ResourceDetectionService = null,
-                StateStore = StateStore
+                StateDao = StateDao
             };
         }
 
@@ -86,7 +87,7 @@ namespace AElf.Sdk.CSharp.Tests
                 chain1.Id,
                 Address.FromRawBytes(ChainId1.OfType(HashType.AccountZero).ToByteArray())
             );
-            DataProvider1.StateStore = StateStore;
+            DataProvider1.StateDao = StateDao;
         }
 
         public async Task DeployContractAsync(byte[] code, Address address)

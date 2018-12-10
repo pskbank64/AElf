@@ -4,11 +4,11 @@ using AElf.Common;
 
 namespace AElf.Kernel.Managers
 {
-    public interface ITransactionManager
+    public interface ITransactionDao
     {
         Task<Hash> AddTransactionAsync(Transaction tx);
         Task<Transaction> GetTransaction(Hash txId);
         Task RemoveTransaction(Hash txId);
-        Task<List<Transaction>> RollbackTransactions(Hash chainId, ulong currentHeight, ulong specificHeight);
+        //Task<List<Transaction>> RollbackTransactions(Hash chainId, ulong currentHeight, ulong specificHeight);
     }
 }

@@ -12,17 +12,17 @@ namespace AElf.Kernel.Tests
     [UseAutofacTestFramework]
     public class TransactionManagerTests
     {
-        private ITransactionManager _manager;
+        private ITransactionDao _dao;
 
-        public TransactionManagerTests(ITransactionManager manager)
+        public TransactionManagerTests(ITransactionDao dao)
         {
-            _manager = manager;
+            _dao = dao;
         }
 
         [Fact]
         public async Task TestInsert()
         {
-            await _manager.AddTransactionAsync(new Transaction
+            await _dao.AddTransactionAsync(new Transaction
             {
                 From = Address.FromRawBytes(Hash.Generate().ToByteArray()),
                 To = Address.FromRawBytes(Hash.Generate().ToByteArray())
@@ -33,8 +33,8 @@ namespace AElf.Kernel.Tests
         public async Task GetTest()
         {
             var t = BuildTransaction();
-            var key = await _manager.AddTransactionAsync(t);
-            var td = await _manager.GetTransaction(key);
+            var key = await _dao.AddTransactionAsync(t);
+            var td = await _dao.GetTransaction(key);
             Assert.Equal(t, td);
         }
         

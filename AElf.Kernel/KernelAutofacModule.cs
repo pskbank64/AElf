@@ -16,13 +16,12 @@ namespace AElf.Kernel
 
             builder.RegisterGeneric(typeof(Serializer<>)).As(typeof(ISerializer<>));
             
-            builder.RegisterType<SmartContractManager>().As<ISmartContractManager>();
-            builder.RegisterType<TransactionManager>().As<ITransactionManager>();
-            builder.RegisterType<TransactionResultManager>().As<ITransactionResultManager>();
-            builder.RegisterType<HashManager>().As<IHashManager>();
-            builder.RegisterType<BlockManagerBasic>().As<IBlockManagerBasic>();
-            builder.RegisterType<ChainManagerBasic>().As<IChainManagerBasic>();
-            builder.RegisterType<BinaryMerkleTreeManager>().As<IBinaryMerkleTreeManager>();
+            builder.RegisterType<SmartContractDao>().As<ISmartContractDao>();
+            builder.RegisterType<TransactionDao>().As<ITransactionDao>();
+            builder.RegisterType<TransactionResultDao>().As<ITransactionResultDao>();
+            builder.RegisterType<BlockDao>().As<IBlockDao>();
+            builder.RegisterType<ChainDao>().As<IChainDao>();
+            builder.RegisterType<BinaryMerkleTreeDao>().As<IBinaryMerkleTreeDao>();
             builder.RegisterType<DataStore>().As<IDataStore>();
         }
     }

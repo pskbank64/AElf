@@ -15,18 +15,18 @@ namespace AElf.Execution.Execution
     public class SimpleExecutingService : IExecutingService
     {
         private ISmartContractService _smartContractService;
-        private ITransactionTraceManager _transactionTraceManager;
+        private ITransactionTraceDao _transactionTraceDao;
         private IChainContextService _chainContextService;
-        private IStateStore _stateStore;
+        private IStateDao _stateDao;
 
         public SimpleExecutingService(ISmartContractService smartContractService,
-            ITransactionTraceManager transactionTraceManager, IStateStore stateStore,
+            ITransactionTraceDao transactionTraceDao, IStateDao stateDao,
             IChainContextService chainContextService)
         {
             _smartContractService = smartContractService;
-            _transactionTraceManager = transactionTraceManager;
+            _transactionTraceDao = transactionTraceDao;
             _chainContextService = chainContextService;
-            _stateStore = stateStore;
+            _stateDao = stateDao;
         }
 
         public async Task<List<TransactionTrace>> ExecuteAsync(List<Transaction> transactions, Hash chainId,
@@ -42,7 +42,7 @@ namespace AElf.Execution.Execution
                 if (trace.IsSuccessful() && trace.ExecutionStatus == ExecutionStatus.ExecutedButNotCommitted)
                 {
                     //Console.WriteLine($"tx executed successfully: {transaction.GetHash().ToHex()}");
-                    await trace.CommitChangesAsync(_stateStore);
+                    await trace.CommitChangesAsync(_stateDao);
 //                    await _stateDictator.ApplyCachedDataAction(bufferedStateUpdates);
 //                    foreach (var kv in bufferedStateUpdates)
 //                    {
@@ -50,10 +50,10 @@ namespace AElf.Execution.Execution
 //                    }
                 }
 
-                if (_transactionTraceManager != null)
+                if (_transactionTraceDao != null)
                 {
                     // Will be null only in tests
-                    await _transactionTraceManager.AddTransactionTraceAsync(trace, disambiguationHash);    
+                    await _transactionTraceDao.AddTransactionTraceAsync(trace, disambiguationHash);    
                 }
 
                 traces.Add(trace);

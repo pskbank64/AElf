@@ -30,19 +30,19 @@ namespace AElf.SideChain.Creation
     {
         private HttpClient _client;
         private ILogger _logger;
-        private ITransactionResultManager TransactionResultManager { get; set; }
+        private ITransactionResultDao TransactionResultDao { get; set; }
         private IChainCreationService ChainCreationService { get; set; }
         private LogEvent _interestedLogEvent;
         private Bloom _bloom;
-        private IChainManagerBasic _chainManagerBasic;
+        private IChainDao _chainDao;
 
-        public ChainCreationEventListener(ILogger logger, ITransactionResultManager transactionResultManager, 
-            IChainCreationService chainCreationService, IChainManagerBasic chainManagerBasic)
+        public ChainCreationEventListener(ILogger logger, ITransactionResultDao transactionResultDao, 
+            IChainCreationService chainCreationService, IChainDao chainDao)
         {
             _logger = logger;
-            TransactionResultManager = transactionResultManager;
+            TransactionResultDao = transactionResultDao;
             ChainCreationService = chainCreationService;
-            _chainManagerBasic = chainManagerBasic;
+            _chainDao = chainDao;
             _interestedLogEvent = new LogEvent()
             {
                 Address = GetGenesisContractHash(),
@@ -101,7 +101,7 @@ namespace AElf.SideChain.Creation
             var infos = new List<SideChainInfo>();
             foreach (var txId in block.Body.Transactions)
             {
-                var res = await TransactionResultManager.GetTransactionResultAsync(txId);
+                var res = await TransactionResultDao.GetTransactionResultAsync(txId);
                 infos.AddRange(GetInterestedEvent(res));
             }
 
@@ -127,7 +127,7 @@ namespace AElf.SideChain.Creation
                         );
                         
                         // insert
-                        await _chainManagerBasic.AddSideChainId(info.ChainId);
+                        await _chainDao.AddSideChainId(info.ChainId);
                     }
                 }
                 catch (Exception e)

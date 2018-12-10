@@ -24,7 +24,7 @@ namespace AElf.Kernel.Tests
             var chainId = Hash.FromString("chain1");
             var address = Address.FromRawBytes(Hash.FromString("contract1").ToByteArray());
             var root = DataProvider.GetRootDataProvider(chainId, address);
-            root.StateStore = new StateStore(db);
+            root.StateDao = new StateDao(db);
             var s = "test";
             var sb = Encoding.UTF8.GetBytes(s);
             var statePath = new StatePath()
@@ -42,11 +42,11 @@ namespace AElf.Kernel.Tests
 
             // Commit changes to store
             var toCommit = retrievedChanges.ToDictionary(kv => kv.Key, kv => kv.Value.CurrentValue.ToByteArray());
-            await root.StateStore.PipelineSetDataAsync(toCommit);
+            await root.StateDao.PipelineSetDataAsync(toCommit);
 
             // Setting the same value again in another DataProvider, no change will be returned
             var root2 = DataProvider.GetRootDataProvider(chainId, address);
-            root2.StateStore = new StateStore(db);
+            root2.StateDao = new StateDao(db);
             await root2.SetAsync(s, sb);
             var changes2 = root2.GetChanges();
             Assert.Equal(0, changes2.Count);

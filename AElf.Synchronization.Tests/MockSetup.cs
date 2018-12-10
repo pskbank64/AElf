@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.ChainController;
 using AElf.Common;
+using AElf.Database;
 using AElf.Execution.Execution;
 using AElf.Kernel;
 using AElf.Kernel.Managers;
@@ -21,35 +22,37 @@ namespace AElf.Synchronization.Tests
         private List<IBlock> _blocks = new List<IBlock>();
         
         private readonly IDataStore _dataStore;
-        private readonly IStateStore _stateStore;
-        private readonly ISmartContractManager _smartContractManager;
-        private ITransactionManager _transactionManager;
-        private ITransactionResultManager _transactionResultManager;
-        private ITransactionTraceManager _transactionTraceManager;
+        private readonly IStateDao _stateDao;
+        private readonly ISmartContractDao _smartContractDao;
+        private readonly IKeyValueDatabase _database;
+        private ITransactionDao _transactionDao;
+        private ITransactionResultDao _transactionResultDao;
+        private ITransactionTraceDao _transactionTraceDao;
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
         private IFunctionMetadataService _functionMetadataService;
         private IExecutingService _concurrencyExecutingService;
         private ITxHub _txHub;
-        private IChainManagerBasic _chainManagerBasic;
+        private IChainDao _chainDao;
 
         private IBlockSynchronizer _blockSynchronizer;
 
-        public MockSetup(IDataStore dataStore, IStateStore stateStore, ITxHub txHub)
+        public MockSetup(IDataStore dataStore, IStateDao stateDao, ITxHub txHub, IKeyValueDatabase database)
         {
             _dataStore = dataStore;
-            _stateStore = stateStore;
+            _stateDao = stateDao;
+            _database = database;
             
-            _smartContractManager = new SmartContractManager(_dataStore);
-            _transactionManager = new TransactionManager(_dataStore);
-            _transactionTraceManager = new TransactionTraceManager(_dataStore);
-            _transactionResultManager = new TransactionResultManager(_dataStore);
+            _smartContractDao = new SmartContractDao(_database);
+            _transactionDao = new TransactionDao(_database);
+            _transactionTraceDao = new TransactionTraceDao(_database);
+            _transactionResultDao = new TransactionResultDao(_database);
             _smartContractRunnerFactory = new SmartContractRunnerFactory();
             _concurrencyExecutingService = new SimpleExecutingService(
-                new SmartContractService(_smartContractManager, _smartContractRunnerFactory, _stateStore,
-                    _functionMetadataService), _transactionTraceManager, _stateStore,
+                new SmartContractService(_smartContractDao, _smartContractRunnerFactory, _stateDao,
+                    _functionMetadataService), _transactionTraceDao, _stateDao,
                 new ChainContextService(GetChainService()));
             _txHub = txHub;
-            _chainManagerBasic = new ChainManagerBasic(dataStore);
+            _chainDao = new ChainDao(_database);
         }
 
         public IBlockSynchronizer GetBlockSynchronizer()
@@ -101,7 +104,7 @@ namespace AElf.Synchronization.Tests
         public IBlockExecutor GetBlockExecutor()
         {
             return new BlockExecutor(GetChainService(), _concurrencyExecutingService, 
-                _transactionResultManager, null, null, _txHub, _chainManagerBasic,_stateStore);
+                _transactionResultDao, null, null, _txHub, _chainDao,_stateDao);
         }
     }
 }

@@ -36,31 +36,31 @@ namespace AElf.Miner.Tests
         private readonly ILogger _logger;
         private ulong _i = 0;
         private IChainCreationService _chainCreationService;
-        private ISmartContractManager _smartContractManager;
+        private ISmartContractDao _smartContractDao;
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
-        private ITransactionManager _transactionManager;
-        private ITransactionReceiptManager _transactionReceiptManager;
-        private ITransactionResultManager _transactionResultManager;
-        private ITransactionTraceManager _transactionTraceManager;
+        private ITransactionDao _transactionDao;
+        private ITransactionReceiptDao _transactionReceiptDao;
+        private ITransactionResultDao _transactionResultDao;
+        private ITransactionTraceDao _transactionTraceDao;
         private IExecutingService _concurrencyExecutingService;
         private IFunctionMetadataService _functionMetadataService;
         private IChainService _chainService;
-        private IBinaryMerkleTreeManager _binaryMerkleTreeManager;
+        private IBinaryMerkleTreeDao _binaryMerkleTreeDao;
         private IKeyValueDatabase _database;
         private readonly IDataStore _dataStore;
-        public readonly IStateStore StateStore;
+        public readonly IStateDao StateDao;
         private IChainContextService _chainContextService;
         private ITxSignatureVerifier _signatureVerifier;
         private ITxRefBlockValidator _refBlockValidator;
-        private IChainManagerBasic _chainManagerBasic;
-        private IStateStore _stateStore;
+        private IChainDao _chainDao;
+        private IStateDao _stateDao;
 
-        public MockSetup(ILogger logger, IKeyValueDatabase database, IDataStore dataStore, IStateStore stateStore, ITxSignatureVerifier signatureVerifier, ITxRefBlockValidator refBlockValidator)
+        public MockSetup(ILogger logger, IKeyValueDatabase database, IDataStore dataStore, IStateDao stateDao, ITxSignatureVerifier signatureVerifier, ITxRefBlockValidator refBlockValidator)
         {
             _logger = logger;
             _database = database;
             _dataStore = dataStore;
-            StateStore = stateStore;
+            StateDao = stateDao;
             _signatureVerifier = signatureVerifier;
             _refBlockValidator = refBlockValidator;
             Initialize();
@@ -68,32 +68,32 @@ namespace AElf.Miner.Tests
 
         private void Initialize()
         {
-            _transactionManager = new TransactionManager(_dataStore, _logger);
-            _transactionReceiptManager = new TransactionReceiptManager(_database);
-            _smartContractManager = new SmartContractManager(_dataStore);
-            _transactionResultManager = new TransactionResultManager(_dataStore);
-            _transactionTraceManager = new TransactionTraceManager(_dataStore);
+            _transactionDao = new TransactionDao(_database);
+            _transactionReceiptDao = new TransactionReceiptDao(_database);
+            _smartContractDao = new SmartContractDao(_database);
+            _transactionResultDao = new TransactionResultDao(_database);
+            _transactionTraceDao = new TransactionTraceDao(_database);
             _functionMetadataService = new FunctionMetadataService(_dataStore, _logger);
-            _chainManagerBasic = new ChainManagerBasic(_dataStore);
-            _chainService = new ChainService(_chainManagerBasic, new BlockManagerBasic(_dataStore),
-                _transactionManager, _transactionTraceManager, _dataStore, StateStore);
+            _chainDao = new ChainDao(_database);
+            _chainService = new ChainService(_chainDao, new BlockDao(_database),
+                _transactionDao, _transactionTraceDao, _dataStore, StateDao);
             _smartContractRunnerFactory = new SmartContractRunnerFactory();
             /*var runner = new SmartContractRunner("../../../../AElf.SDK.CSharp/bin/Debug/netstandard2.0/");
             _smartContractRunnerFactory.AddRunner(0, runner);*/
             var runner = new SmartContractRunner(ContractCodes.TestContractFolder);
             _smartContractRunnerFactory.AddRunner(0, runner);
             _concurrencyExecutingService = new SimpleExecutingService(
-                new SmartContractService(_smartContractManager, _smartContractRunnerFactory, StateStore,
-                    _functionMetadataService), _transactionTraceManager, StateStore,
+                new SmartContractService(_smartContractDao, _smartContractRunnerFactory, StateDao,
+                    _functionMetadataService), _transactionTraceDao, StateDao,
                 new ChainContextService(_chainService));
             
             _chainCreationService = new ChainCreationService(_chainService,
-                new SmartContractService(new SmartContractManager(_dataStore), _smartContractRunnerFactory,
-                    StateStore, _functionMetadataService), _logger);
+                new SmartContractService(new SmartContractDao(_database), _smartContractRunnerFactory,
+                    StateDao, _functionMetadataService), _logger);
 
-            _binaryMerkleTreeManager = new BinaryMerkleTreeManager(_dataStore);
+            _binaryMerkleTreeDao = new BinaryMerkleTreeDao(_database);
             _chainContextService = new ChainContextService(_chainService);
-            _stateStore = new StateStore(_database);
+            _stateDao = new StateDao(_database);
         }
 
         private byte[] SmartContractZeroCode => ContractCodes.TestContractZeroCode;
@@ -116,8 +116,8 @@ namespace AElf.Miner.Tests
         internal IMiner GetMiner(IMinerConfig config, ITxHub hub, ClientManager clientManager = null)
         {
             var miner = new AElf.Miner.Miner.Miner(config, hub, _chainService, _concurrencyExecutingService,
-                _transactionResultManager, _logger, clientManager, _binaryMerkleTreeManager, null,
-                MockBlockValidationService().Object, _chainContextService, _chainManagerBasic, _stateStore);
+                _transactionResultDao, _logger, clientManager, _binaryMerkleTreeDao, null,
+                MockBlockValidationService().Object, _chainContextService, _chainDao, _stateDao);
 
             return miner;
         }
@@ -125,8 +125,8 @@ namespace AElf.Miner.Tests
         internal IBlockExecutor GetBlockExecutor(ClientManager clientManager = null)
         {
             var blockExecutor = new BlockExecutor(_chainService, _concurrencyExecutingService,
-                _transactionResultManager, clientManager, _binaryMerkleTreeManager,
-                new TxHub(_transactionManager, _transactionReceiptManager, _chainService, _signatureVerifier, _refBlockValidator), _chainManagerBasic, StateStore);
+                _transactionResultDao, clientManager, _binaryMerkleTreeDao,
+                new TxHub(_transactionDao, _transactionReceiptDao, _chainService, _signatureVerifier, _refBlockValidator), _chainDao, StateDao);
 
             return blockExecutor;
         }
@@ -139,7 +139,7 @@ namespace AElf.Miner.Tests
         internal ITxHub CreateTxPool()
         {
             var validator = new TxValidator(TxPoolConfig.Default, _chainService, _logger);
-            return new TxHub(_transactionManager, _transactionReceiptManager, _chainService, _signatureVerifier, _refBlockValidator);
+            return new TxHub(_transactionDao, _transactionReceiptDao, _chainService, _signatureVerifier, _refBlockValidator);
 //            return new TxPool(_logger, new NewTxHub(_transactionManager, _chainService, _signatureVerifier, _refBlockValidator));
         }
 
@@ -221,9 +221,9 @@ namespace AElf.Miner.Tests
             return mock;
         }
 
-        private Mock<IBinaryMerkleTreeManager> MockBinaryMerkleTreeManager()
+        private Mock<IBinaryMerkleTreeDao> MockBinaryMerkleTreeManager()
         {
-            Mock<IBinaryMerkleTreeManager> mock = new Mock<IBinaryMerkleTreeManager>();
+            Mock<IBinaryMerkleTreeDao> mock = new Mock<IBinaryMerkleTreeDao>();
             mock.Setup(b => b.GetSideChainTransactionRootsMerkleTreeByHeightAsync(It.IsAny<Hash>(), It.IsAny<ulong>()))
                 .Returns<Hash, ulong>((_, u) =>
                 {
@@ -248,9 +248,9 @@ namespace AElf.Miner.Tests
             return new ServerManager(impl1, impl2, _logger);
         }
         
-        public Mock<IChainManagerBasic> MockChainManager()
+        public Mock<IChainDao> MockChainManager()
         {
-            var mock = new Mock<IChainManagerBasic>();
+            var mock = new Mock<IChainDao>();
             mock.Setup(cm => cm.GetCurrentBlockHeightAsync(It.IsAny<Hash>())).Returns(() =>
             {
                 var k = _i;

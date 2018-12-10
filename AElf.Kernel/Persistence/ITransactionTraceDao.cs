@@ -3,7 +3,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Managers
 {
-    public interface ITransactionTraceManager
+    public interface ITransactionTraceDao
     {
         Task AddTransactionTraceAsync(TransactionTrace tr, Hash disambiguationHash = null);
 

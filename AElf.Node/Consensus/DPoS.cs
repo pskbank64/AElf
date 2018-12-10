@@ -80,7 +80,7 @@ namespace AElf.Kernel.Node
         private AElfDPoSObserver AElfDPoSObserver => new AElfDPoSObserver(MiningWithInitializingAElfDPoSInformation,
             MiningWithPublishingOutValueAndSignature, PublishInValue, MiningWithUpdatingAElfDPoSInformation);
 
-        public DPoS(IStateStore stateStore, ITxHub txHub, IMiner miner, IChainService chainService)
+        public DPoS(IStateDao stateDao, ITxHub txHub, IMiner miner, IChainService chainService)
         {
             _txHub = txHub;
             _miner = miner;
@@ -91,9 +91,9 @@ namespace AElf.Kernel.Node
             _logger = LogManager.GetLogger(nameof(DPoS));
 
             Helper = new AElfDPoSHelper(Hash.LoadHex(ChainConfig.Instance.ChainId), Miners,
-                ContractAddress, stateStore);
+                ContractAddress, stateDao);
 
-            Provider = new DPoSInfoProvider(stateStore);
+            Provider = new DPoSInfoProvider(stateDao);
             
             var count = MinersConfig.Instance.Producers.Count;
 

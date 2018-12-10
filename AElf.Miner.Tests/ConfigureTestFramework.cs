@@ -41,11 +41,11 @@ namespace AElf.Miner.Tests
             builder.RegisterType<ChainContextService>().As<IChainContextService>().SingleInstance();
             builder.RegisterType<ChainService>().As<IChainService>().SingleInstance();
             builder.RegisterType<BlockSet>().As<IBlockSet>().SingleInstance();
-            builder.RegisterType<ChainManagerBasic>().As<IChainManagerBasic>().SingleInstance();
-            builder.RegisterType<BlockManagerBasic>().As<IBlockManagerBasic>().SingleInstance();
-            builder.RegisterType<TransactionManager>().As<ITransactionManager>().SingleInstance();
-            builder.RegisterType<TransactionTraceManager>().As<ITransactionTraceManager>().SingleInstance();
-            builder.RegisterType<StateStore>().As<IStateStore>();
+            builder.RegisterType<ChainDao>().As<IChainDao>().SingleInstance();
+            builder.RegisterType<BlockDao>().As<IBlockDao>().SingleInstance();
+            builder.RegisterType<TransactionDao>().As<ITransactionDao>().SingleInstance();
+            builder.RegisterType<TransactionTraceDao>().As<ITransactionTraceDao>().SingleInstance();
+            builder.RegisterType<StateDao>().As<IStateDao>();
             builder.RegisterType<TxSignatureVerifier>().As<ITxSignatureVerifier>();
             builder.RegisterType<TxRefBlockValidator>().As<ITxRefBlockValidator>();
         }

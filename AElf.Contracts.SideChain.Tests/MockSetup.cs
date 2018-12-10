@@ -33,8 +33,8 @@ namespace AElf.Contracts.SideChain.Tests
             }
     
             public Hash ChainId1 { get; } = Hash.FromString("ChainId1");
-            public IStateStore StateStore { get; private set; }
-            public ISmartContractManager SmartContractManager;
+            public IStateDao StateDao { get; private set; }
+            public ISmartContractDao SmartContractDao;
             public ISmartContractService SmartContractService;
             public IChainService ChainService;
             private IFunctionMetadataService _functionMetadataService;
@@ -44,6 +44,7 @@ namespace AElf.Contracts.SideChain.Tests
             private ISmartContractRunnerFactory _smartContractRunnerFactory;
             private ILogger _logger;
             private IDataStore _dataStore;
+            private IKeyValueDatabase _database;
 
             public MockSetup(ILogger logger)
             {
@@ -54,32 +55,32 @@ namespace AElf.Contracts.SideChain.Tests
             private void Initialize()
             {
                 NewStorage();
-                var transactionManager = new TransactionManager(_dataStore, _logger);
-                var transactionTraceManager = new TransactionTraceManager(_dataStore);
+                var transactionManager = new TransactionDao(_database);
+                var transactionTraceManager = new TransactionTraceDao(_database);
                 _functionMetadataService = new FunctionMetadataService(_dataStore, _logger);
-                var chainManagerBasic = new ChainManagerBasic(_dataStore);
-                ChainService = new ChainService(chainManagerBasic, new BlockManagerBasic(_dataStore),
-                    transactionManager, transactionTraceManager, _dataStore, StateStore);
+                var chainManagerBasic = new ChainDao(_database);
+                ChainService = new ChainService(chainManagerBasic, new BlockDao(_database),
+                    transactionManager, transactionTraceManager, _dataStore, StateDao);
                 _smartContractRunnerFactory = new SmartContractRunnerFactory();
                 var runner = new SmartContractRunner("../../../../AElf.Runtime.CSharp.Tests.TestContract/bin/Debug/netstandard2.0/");
                 _smartContractRunnerFactory.AddRunner(0, runner);
                 _chainCreationService = new ChainCreationService(ChainService,
-                    new SmartContractService(new SmartContractManager(_dataStore), _smartContractRunnerFactory,
-                        StateStore, _functionMetadataService), _logger);
-                SmartContractManager = new SmartContractManager(_dataStore);
+                    new SmartContractService(new SmartContractDao(_database), _smartContractRunnerFactory,
+                        StateDao, _functionMetadataService), _logger);
+                SmartContractDao = new SmartContractDao(_database);
                 Task.Factory.StartNew(async () =>
                 {
                     await Init();
                 }).Unwrap().Wait();
-                SmartContractService = new SmartContractService(SmartContractManager, _smartContractRunnerFactory, StateStore, _functionMetadataService);
-                ChainService = new ChainService(new ChainManagerBasic(_dataStore), new BlockManagerBasic(_dataStore), new TransactionManager(_dataStore), new TransactionTraceManager(_dataStore), _dataStore, StateStore);
+                SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory, StateDao, _functionMetadataService);
+                ChainService = new ChainService(new ChainDao(_database), new BlockDao(_database), new TransactionDao(_database), new TransactionTraceDao(_database), _dataStore, StateDao);
             }
 
             private void NewStorage()
             {
-                var db = new InMemoryDatabase();
-                StateStore = new StateStore(db);
-                _dataStore = new DataStore(db);
+                _database = new InMemoryDatabase();
+                StateDao = new StateDao(_database);
+                _dataStore = new DataStore(_database);
             }
             
             public byte[] SideChainCode

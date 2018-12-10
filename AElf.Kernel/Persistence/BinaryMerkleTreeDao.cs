@@ -1,16 +1,21 @@
 using System.Threading.Tasks;
 using AElf.Kernel.Storages;
 using AElf.Common;
+using AElf.Database;
+using AElf.Kernel.Types;
+using Google.Protobuf;
+using NLog.Targets.Wrappers;
 
 namespace AElf.Kernel.Managers
 {
-    public class BinaryMerkleTreeManager : IBinaryMerkleTreeManager
+    public class BinaryMerkleTreeDao : IBinaryMerkleTreeDao
     {
-        private readonly IDataStore _dataStore;
+        private readonly IKeyValueDatabase _database;
+        private const string _dbName = "BinaryMerkleTree";
 
-        public BinaryMerkleTreeManager(IDataStore dataStore)
+        public BinaryMerkleTreeDao(IKeyValueDatabase database)
         {
-            _dataStore = dataStore;
+            _database = database;
         }
 
         /// <summary>
@@ -23,7 +28,7 @@ namespace AElf.Kernel.Managers
         public async Task AddTransactionsMerkleTreeAsync(BinaryMerkleTree binaryMerkleTree, Hash chainId, ulong height)
         {
             var key = DataPath.CalculatePointerForTransactionsMerkleTreeByHeight(chainId, height);
-            await _dataStore.InsertAsync(key, binaryMerkleTree);
+            await _database.SetAsync(_dbName, key.DumpHex(), binaryMerkleTree.ToByteArray());
         }
 
         /// <summary>
@@ -37,7 +42,7 @@ namespace AElf.Kernel.Managers
             Hash chainId, ulong height)
         {
             var key = DataPath.CalculatePointerForSideChainTxRootsMerkleTreeByHeight(chainId, height);
-            await _dataStore.InsertAsync(key, binaryMerkleTree);
+            await _database.SetAsync(_dbName, key.DumpHex(), binaryMerkleTree.ToByteArray());
         }
 
         /// <summary> 
@@ -49,7 +54,9 @@ namespace AElf.Kernel.Managers
         public async Task<BinaryMerkleTree> GetTransactionsMerkleTreeByHeightAsync(Hash chainId, ulong height)
         {
             var key = DataPath.CalculatePointerForTransactionsMerkleTreeByHeight(chainId, height);
-            return await _dataStore.GetAsync<BinaryMerkleTree>(key);
+            var data = await _database.GetAsync(_dbName, key.DumpHex());
+
+            return data?.Deserialize<BinaryMerkleTree>();
         }
 
         /// <summary> 
@@ -61,7 +68,9 @@ namespace AElf.Kernel.Managers
         public async Task<BinaryMerkleTree> GetSideChainTransactionRootsMerkleTreeByHeightAsync(Hash chainId, ulong height)
         {
             var key = DataPath.CalculatePointerForSideChainTxRootsMerkleTreeByHeight(chainId, height);
-            return await _dataStore.GetAsync<BinaryMerkleTree>(key);
+            var data = await _database.GetAsync(_dbName, key.DumpHex());
+
+            return data?.Deserialize<BinaryMerkleTree>();
         }
 
         /// <summary>
@@ -74,7 +83,7 @@ namespace AElf.Kernel.Managers
         public async Task AddIndexedTxRootMerklePathInParentChain(MerklePath path, Hash chainId, ulong height)
         {
             var key = DataPath.CalculatePointerForIndexedTxRootMerklePathByHeight(chainId, height);
-            await _dataStore.InsertAsync(key, path);
+            await _database.SetAsync(_dbName, key.DumpHex(), path.ToByteArray());
         }
         
         /// <summary>
@@ -86,7 +95,9 @@ namespace AElf.Kernel.Managers
         public async Task<MerklePath> GetIndexedTxRootMerklePathInParentChain(Hash chainId, ulong height)
         {
             var key = DataPath.CalculatePointerForIndexedTxRootMerklePathByHeight(chainId, height);
-            return await _dataStore.GetAsync<MerklePath>(key);
+            var data = await _database.GetAsync(_dbName, key.DumpHex());
+
+            return data?.Deserialize<MerklePath>();
         }
     }
 }
