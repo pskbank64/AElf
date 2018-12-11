@@ -59,7 +59,9 @@ namespace AElf.Contracts.SideChain.Tests
                 NewStorage();
                 var transactionManager = new TransactionDao(_database);
                 var transactionTraceManager = new TransactionTraceDao(_database);
-                _functionMetadataService = new FunctionMetadataService(_dataStore, _logger);
+                var callingGraphDao = new CallingGraphDao(_database);
+                var functionMetadataDao = new FunctionMetadataDao(_database);
+                _functionMetadataService = new FunctionMetadataService(callingGraphDao, functionMetadataDao, _logger);
                 var chainManagerBasic = new ChainDao(_database);
                 _lightChainCanonicalDao =new LightChainCanonicalDao(_database);
                 ChainService = new ChainService(chainManagerBasic, new BlockDao(_database),

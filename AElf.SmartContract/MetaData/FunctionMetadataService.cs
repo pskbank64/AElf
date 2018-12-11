@@ -6,19 +6,22 @@ using NLog;
 using Org.BouncyCastle.Security;
 using AElf.Common;
 using AElf.Kernel;
+using AElf.Kernel.Persistence;
 
 namespace AElf.SmartContract.Metadata
 {
     [LoggerName("SmartContract")]
     public class FunctionMetadataService : IFunctionMetadataService
     {
-        private IDataStore _dataStore;
+        private readonly ICallingGraphDao _callingGraphDao;
+        private readonly IFunctionMetadataDao _functionMetadataDao;
         private readonly ConcurrentDictionary<Hash, ChainFunctionMetadata> _metadatas;
         private ILogger _logger;
 
-        public FunctionMetadataService(IDataStore dataStore, ILogger logger)
+        public FunctionMetadataService(ICallingGraphDao callingGraphDao, IFunctionMetadataDao functionMetadataDao, ILogger logger)
         {
-            _dataStore = dataStore;
+            _callingGraphDao = callingGraphDao;
+            _functionMetadataDao = functionMetadataDao;
             _logger = logger;
             _metadatas = new ConcurrentDictionary<Hash, ChainFunctionMetadata>();
         }
@@ -30,7 +33,7 @@ namespace AElf.SmartContract.Metadata
             //TODO: find a way to mark these transaction as a same group (maybe by using "r/w account sharing data"?)
             if (!_metadatas.TryGetValue(chainId, out var chainFuncMetadata))
             {
-                chainFuncMetadata = _metadatas.GetOrAdd(chainId, new ChainFunctionMetadata(_dataStore, _logger));
+                chainFuncMetadata = _metadatas.GetOrAdd(chainId, new ChainFunctionMetadata(_callingGraphDao,_functionMetadataDao, _logger));
             }
             
             //TODO: need to

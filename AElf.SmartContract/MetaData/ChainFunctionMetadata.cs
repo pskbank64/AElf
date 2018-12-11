@@ -11,20 +11,23 @@ using AElf.SmartContract.MetaData;
 using QuickGraph;
 using QuickGraph.Algorithms;
 using AElf.Common;
+using AElf.Kernel.Persistence;
 
 namespace AElf.SmartContract
 {
     public class ChainFunctionMetadata : IChainFunctionMetadata
     {
         private readonly ILogger _logger;
-        private readonly IDataStore _dataStore;
+        private readonly ICallingGraphDao _callingGraphDao;
+        private readonly IFunctionMetadataDao _functionMetadataDao;
 
         public Dictionary<string, FunctionMetadata> FunctionMetadataMap = new Dictionary<string, FunctionMetadata>();
         
         
-        public ChainFunctionMetadata(IDataStore dataStore,  ILogger logger)
+        public ChainFunctionMetadata(ICallingGraphDao callingGraphDao, IFunctionMetadataDao functionMetadataDao, ILogger logger)
         {
-            _dataStore = dataStore;
+            _callingGraphDao = callingGraphDao;
+            _functionMetadataDao = functionMetadataDao;
             _logger = logger;
         }
 
@@ -56,14 +59,14 @@ namespace AElf.SmartContract
                 }
 
                 //if no exception is thrown, merge the tempMap into FunctionMetadataMap and update call graph in database
-                await _dataStore.InsertAsync(chainId.OfType(HashType.CallingGraph),
+                await _callingGraphDao.AddOrUpdateAsync(chainId.OfType(HashType.CallingGraph),
                     SerializeCallingGraph(newCallGraph));
                 
                 foreach (var functionMetadata in tempMap)
                 {
                     FunctionMetadataMap.Add(functionMetadata.Key, functionMetadata.Value);
                     
-                    await _dataStore.InsertAsync(
+                    await _functionMetadataDao.AddOrUpdateAsync(
                         DataPath.CalculatePointerForMetadata(chainId, functionMetadata.Key),
                         functionMetadata.Value);
                 }
@@ -152,7 +155,7 @@ namespace AElf.SmartContract
             //BUG: if the smart contract can be updated, then somehow this in-memory cache FunctionMetadataMap need to be updated too. Currently the ChainFunctionMetadata has no way to know some metadata is updated; current thought is to request current "previous block hash" every time the ChainFunctionMetadata public interface got executed, that is "only use cache when in the same block, can clear the cache per block"
             if (!FunctionMetadataMap.TryGetValue(functionFullName, out var txMetadata))
             {
-                var data = await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, functionFullName));
+                var data = await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, functionFullName));
                 if (data != null)
                 {
                     txMetadata = data;
@@ -289,7 +292,7 @@ namespace AElf.SmartContract
         #region Serialize
         private async Task<CallGraph> GetCallingGraphForChain(Hash chainId)
         {
-            var graphCache = await _dataStore.GetAsync<SerializedCallGraph>(chainId.OfType(HashType.CallingGraph));
+            var graphCache = await _callingGraphDao.GetAsync(chainId.OfType(HashType.CallingGraph));
             if (graphCache == null)
             {
                 return new CallGraph();

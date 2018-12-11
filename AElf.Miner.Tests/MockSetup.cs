@@ -75,7 +75,9 @@ namespace AElf.Miner.Tests
             _smartContractDao = new SmartContractDao(_database);
             _transactionResultDao = new TransactionResultDao(_database);
             _transactionTraceDao = new TransactionTraceDao(_database);
-            _functionMetadataService = new FunctionMetadataService(_dataStore, _logger);
+            var callingGraphDao = new CallingGraphDao(_database);
+            var functionMetadataDao = new FunctionMetadataDao(_database);
+            _functionMetadataService = new FunctionMetadataService(callingGraphDao, functionMetadataDao, _logger);
             _chainDao = new ChainDao(_database);
             _lightChainCanonicalDao = new LightChainCanonicalDao(_database);
             _chainService = new ChainService(_chainDao, new BlockDao(_database),
