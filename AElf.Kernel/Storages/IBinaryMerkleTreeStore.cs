@@ -3,7 +3,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface IBinaryMerkleTreeDao
+    public interface IBinaryMerkleTreeStore
     {
         Task AddTransactionsMerkleTreeAsync(BinaryMerkleTree binaryMerkleTree, Hash chainId, ulong height);
         Task AddSideChainTransactionRootsMerkleTreeAsync(BinaryMerkleTree binaryMerkleTree, Hash chainId, ulong height);

@@ -15,14 +15,14 @@ namespace AElf.Kernel
 
             builder.RegisterGeneric(typeof(Serializer<>)).As(typeof(ISerializer<>));
             
-            builder.RegisterType<SmartContractDao>().As<ISmartContractDao>().SingleInstance();
-            builder.RegisterType<TransactionDao>().As<ITransactionDao>().SingleInstance();
-            builder.RegisterType<TransactionResultDao>().As<ITransactionResultDao>().SingleInstance();
-            builder.RegisterType<BlockDao>().As<IBlockDao>().SingleInstance();
-            builder.RegisterType<ChainDao>().As<IChainDao>().SingleInstance();
-            builder.RegisterType<BinaryMerkleTreeDao>().As<IBinaryMerkleTreeDao>().SingleInstance();
-            builder.RegisterType<LightChainCanonicalDao>().As<ILightChainCanonicalDao>().SingleInstance();
-            builder.RegisterType<FunctionMetadataDao>().As<IFunctionMetadataDao>().SingleInstance();
+            builder.RegisterType<SmartContractStore>().As<ISmartContractStore>().SingleInstance();
+            builder.RegisterType<TransactionStore>().As<ITransactionStore>().SingleInstance();
+            builder.RegisterType<TransactionResultStore>().As<ITransactionResultStore>().SingleInstance();
+            builder.RegisterType<BlockStore>().As<IBlockStore>().SingleInstance();
+            builder.RegisterType<ChainStore>().As<IChainStore>().SingleInstance();
+            builder.RegisterType<BinaryMerkleTreeStore>().As<IBinaryMerkleTreeStore>().SingleInstance();
+            builder.RegisterType<LightChainCanonicalStore>().As<ILightChainCanonicalStore>().SingleInstance();
+            builder.RegisterType<FunctionMetadataStore>().As<IFunctionMetadataStore>().SingleInstance();
         }
     }
 }

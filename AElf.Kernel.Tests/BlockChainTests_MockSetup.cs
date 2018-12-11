@@ -34,7 +34,7 @@ namespace AElf.Kernel.Tests
         }
 
         public Hash ChainId1 { get; } = Hash.FromString("ChainId1");
-        public ISmartContractDao SmartContractDao;
+        public ISmartContractStore SmartContractStore;
         public ISmartContractService SmartContractService;
 
         public IChainContextService ChainContextService;
@@ -51,10 +51,10 @@ namespace AElf.Kernel.Tests
         private IFunctionMetadataService _functionMetadataService;
         private ILogger _logger;
 
-        private IStateDao _stateDao;
+        private IStateStore _stateStore;
         public IActorEnvironment ActorEnvironment { get; private set; }
 
-        private readonly TransactionDao _transactionDao;
+        private readonly TransactionStore _transactionStore;
 
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
 
@@ -62,21 +62,21 @@ namespace AElf.Kernel.Tests
             IChainService chainService,
             IChainContextService chainContextService, IFunctionMetadataService functionMetadataService,
             ISmartContractRunnerFactory smartContractRunnerFactory, ILogger logger,
-            IStateDao stateDao, TransactionDao transactionDao,
+            IStateStore stateStore, TransactionStore transactionStore,
             IKeyValueDatabase database)
         {
             _logger = logger;
-            _stateDao = stateDao;
-            _transactionDao = transactionDao;
+            _stateStore = stateStore;
+            _transactionStore = transactionStore;
             _chainCreationService = chainCreationService;
             ChainService = chainService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            SmartContractDao = new SmartContractDao(database);
+            SmartContractStore = new SmartContractStore(database);
             Task.Factory.StartNew(async () => { await Init(); }).Unwrap().Wait();
             SmartContractService =
-                new SmartContractService(SmartContractDao, _smartContractRunnerFactory, stateDao,
+                new SmartContractService(SmartContractStore, _smartContractRunnerFactory, stateStore,
                     functionMetadataService);
             Task.Factory.StartNew(async () => { await DeploySampleContracts(); }).Unwrap().Wait();
         }
@@ -112,7 +112,7 @@ namespace AElf.Kernel.Tests
 
         public async Task CommitTrace(TransactionTrace trace)
         {
-            await trace.CommitChangesAsync(_stateDao);
+            await trace.CommitChangesAsync(_stateStore);
         }
 
         public void Initialize1(Address account, ulong qty)

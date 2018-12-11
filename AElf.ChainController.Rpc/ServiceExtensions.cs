@@ -184,7 +184,7 @@ namespace AElf.ChainController.Rpc
             }
 
             var prodAddr = Address.FromRawBytes(b.Header.P.ToByteArray());
-            var res = await s.TransactionTraceDao.GetTransactionTraceAsync(txHash,
+            var res = await s.TransactionTraceStore.GetTransactionTraceAsync(txHash,
                 HashHelpers.GetDisambiguationHash(height, prodAddr));
             return res;
         }

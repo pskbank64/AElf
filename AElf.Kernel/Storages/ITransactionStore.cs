@@ -3,7 +3,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface ITransactionDao
+    public interface ITransactionStore
     {
         Task<Hash> AddTransactionAsync(Transaction tx);
         Task<Transaction> GetTransaction(Hash txId);

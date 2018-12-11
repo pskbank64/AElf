@@ -30,19 +30,19 @@ namespace AElf.SideChain.Creation
     {
         private HttpClient _client;
         private ILogger _logger;
-        private ITransactionResultDao TransactionResultDao { get; set; }
+        private ITransactionResultStore TransactionResultStore { get; set; }
         private IChainCreationService ChainCreationService { get; set; }
         private LogEvent _interestedLogEvent;
         private Bloom _bloom;
-        private IChainDao _chainDao;
+        private IChainStore _chainStore;
 
-        public ChainCreationEventListener(ILogger logger, ITransactionResultDao transactionResultDao, 
-            IChainCreationService chainCreationService, IChainDao chainDao)
+        public ChainCreationEventListener(ILogger logger, ITransactionResultStore transactionResultStore, 
+            IChainCreationService chainCreationService, IChainStore chainStore)
         {
             _logger = logger;
-            TransactionResultDao = transactionResultDao;
+            TransactionResultStore = transactionResultStore;
             ChainCreationService = chainCreationService;
-            _chainDao = chainDao;
+            _chainStore = chainStore;
             _interestedLogEvent = new LogEvent()
             {
                 Address = GetGenesisContractHash(),
@@ -101,7 +101,7 @@ namespace AElf.SideChain.Creation
             var infos = new List<SideChainInfo>();
             foreach (var txId in block.Body.Transactions)
             {
-                var res = await TransactionResultDao.GetTransactionResultAsync(txId);
+                var res = await TransactionResultStore.GetTransactionResultAsync(txId);
                 infos.AddRange(GetInterestedEvent(res));
             }
 
@@ -127,7 +127,7 @@ namespace AElf.SideChain.Creation
                         );
                         
                         // insert
-                        await _chainDao.AddSideChainId(info.ChainId);
+                        await _chainStore.AddSideChainId(info.ChainId);
                     }
                 }
                 catch (Exception e)

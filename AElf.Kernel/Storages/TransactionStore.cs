@@ -6,12 +6,12 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public class TransactionDao: ITransactionDao
+    public class TransactionStore: ITransactionStore
     {
         private readonly IKeyValueDatabase _database;
         private const string _dbName = "Transaction";
 
-        public TransactionDao(IKeyValueDatabase database)
+        public TransactionStore(IKeyValueDatabase database)
         {
             _database = database;
         }

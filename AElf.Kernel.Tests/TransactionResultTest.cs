@@ -17,25 +17,25 @@ namespace AElf.Kernel.Tests
     public class TransactionResultTest
     {
         private readonly ITransactionResultService _transactionResultService;
-        private readonly ITransactionResultDao _transactionResultDao;
+        private readonly ITransactionResultStore _transactionResultStore;
         private readonly ITxSignatureVerifier _signatureVerifier;
         private readonly ITxRefBlockValidator _refBlockValidator;
         private readonly ITxHub _txHub;
 
         public TransactionResultTest(ITxPoolConfig txPoolConfig, IChainService chainService,
             ITxSignatureVerifier signatureVerifier, ITxRefBlockValidator refBlockValidator,
-            ITransactionResultDao transactionResultDao, ITxHub txHub)
+            ITransactionResultStore transactionResultStore, ITxHub txHub)
         {
             ChainConfig.Instance.ChainId = Hash.Generate().DumpHex();
             NodeConfig.Instance.NodeAccount = Address.Generate().DumpHex();
-            _transactionResultDao = transactionResultDao;
+            _transactionResultStore = transactionResultStore;
             _signatureVerifier = signatureVerifier;
             _refBlockValidator = refBlockValidator;
             _txHub = txHub;
 //            _transactionResultService = new TransactionResultService(
 //                new TxPool(logger,
 //                    new NewTxHub(transactionManager, chainService, signatureVerifier, refBlockValidator)), transactionResultManager);
-            _transactionResultService = new TransactionResultService(_txHub, _transactionResultDao);
+            _transactionResultService = new TransactionResultService(_txHub, _transactionResultStore);
         }
 
         private TransactionResult CreateResult(Hash txId, Status status)
@@ -53,8 +53,8 @@ namespace AElf.Kernel.Tests
         {
             var txId = Hash.Generate();
             var res = CreateResult(txId, Status.Mined);
-            await _transactionResultDao.AddTransactionResultAsync(res);
-            var r = await _transactionResultDao.GetTransactionResultAsync(txId);
+            await _transactionResultStore.AddTransactionResultAsync(res);
+            var r = await _transactionResultStore.GetTransactionResultAsync(txId);
             Assert.Equal(res, r);
         }
         
@@ -84,7 +84,7 @@ namespace AElf.Kernel.Tests
         {
             var txId = Hash.Generate();
             var res = CreateResult(txId, Status.Mined);
-            await _transactionResultDao.AddTransactionResultAsync(res);
+            await _transactionResultStore.AddTransactionResultAsync(res);
 
             var r = await _transactionResultService.GetResultAsync(txId);
             Assert.Equal(res, r);

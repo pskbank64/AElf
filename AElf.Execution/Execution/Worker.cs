@@ -41,7 +41,7 @@ namespace AElf.Execution
                     if (_state == State.PendingSetSericePack)
                     {
                         _servicePack = res.ServicePack;
-                        _proxyExecutingService  = new SimpleExecutingService(_servicePack.SmartContractService, _servicePack.TransactionTraceDao, _servicePack.StateDao, _servicePack.ChainContextService);
+                        _proxyExecutingService  = new SimpleExecutingService(_servicePack.SmartContractService, _servicePack.TransactionTraceStore, _servicePack.StateStore, _servicePack.ChainContextService);
                         _state = State.Idle;
                     }
 

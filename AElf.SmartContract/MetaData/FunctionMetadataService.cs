@@ -12,15 +12,15 @@ namespace AElf.SmartContract.Metadata
     [LoggerName("SmartContract")]
     public class FunctionMetadataService : IFunctionMetadataService
     {
-        private readonly ICallingGraphDao _callingGraphDao;
-        private readonly IFunctionMetadataDao _functionMetadataDao;
+        private readonly ICallingGraphStore _callingGraphStore;
+        private readonly IFunctionMetadataStore _functionMetadataStore;
         private readonly ConcurrentDictionary<Hash, ChainFunctionMetadata> _metadatas;
         private ILogger _logger;
 
-        public FunctionMetadataService(ICallingGraphDao callingGraphDao, IFunctionMetadataDao functionMetadataDao, ILogger logger)
+        public FunctionMetadataService(ICallingGraphStore callingGraphStore, IFunctionMetadataStore functionMetadataStore, ILogger logger)
         {
-            _callingGraphDao = callingGraphDao;
-            _functionMetadataDao = functionMetadataDao;
+            _callingGraphStore = callingGraphStore;
+            _functionMetadataStore = functionMetadataStore;
             _logger = logger;
             _metadatas = new ConcurrentDictionary<Hash, ChainFunctionMetadata>();
         }
@@ -32,7 +32,7 @@ namespace AElf.SmartContract.Metadata
             //TODO: find a way to mark these transaction as a same group (maybe by using "r/w account sharing data"?)
             if (!_metadatas.TryGetValue(chainId, out var chainFuncMetadata))
             {
-                chainFuncMetadata = _metadatas.GetOrAdd(chainId, new ChainFunctionMetadata(_callingGraphDao,_functionMetadataDao, _logger));
+                chainFuncMetadata = _metadatas.GetOrAdd(chainId, new ChainFunctionMetadata(_callingGraphStore,_functionMetadataStore, _logger));
             }
             
             //TODO: need to

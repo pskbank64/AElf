@@ -67,7 +67,7 @@ namespace AElf.Runtime.CSharp
         private ISmartContract _smartContract;
         private ITransactionContext _currentTransactionContext;
         private ISmartContractContext _currentSmartContractContext;
-        private IStateDao _stateDao;
+        private IStateStore _stateStore;
         private int _maxCallDepth = 4;
 
         public Executive(Module abiModule)
@@ -84,9 +84,9 @@ namespace AElf.Runtime.CSharp
             return this;
         }
 
-        public IExecutive SetStateStore(IStateDao stateDao)
+        public IExecutive SetStateStore(IStateStore stateStore)
         {
-            _stateDao = stateDao;
+            _stateStore = stateStore;
             return this;
         }
 

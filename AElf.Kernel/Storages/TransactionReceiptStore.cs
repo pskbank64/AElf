@@ -8,13 +8,13 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public class TransactionReceiptDao : ITransactionReceiptDao
+    public class TransactionReceiptStore : ITransactionReceiptStore
     {
         private readonly IKeyValueDatabase _database;
 
         private const string _dbName = "TransactionReceipt";
 
-        public TransactionReceiptDao(IKeyValueDatabase database)
+        public TransactionReceiptStore(IKeyValueDatabase database)
         {
             _database = database;
         }

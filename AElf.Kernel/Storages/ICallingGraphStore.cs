@@ -3,7 +3,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface ICallingGraphDao
+    public interface ICallingGraphStore
     {
         Task AddOrUpdateAsync(Hash key, SerializedCallGraph serializedCallGraph);
 

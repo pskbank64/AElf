@@ -30,14 +30,14 @@ namespace AElf.Synchronization.BlockExecution
     public class BlockExecutor : IBlockExecutor
     {
         private readonly IChainService _chainService;
-        private readonly ITransactionResultDao _transactionResultDao;
+        private readonly ITransactionResultStore _transactionResultStore;
         private readonly IExecutingService _executingService;
         private readonly ILogger _logger;
         private readonly ClientManager _clientManager;
-        private readonly IBinaryMerkleTreeDao _binaryMerkleTreeDao;
+        private readonly IBinaryMerkleTreeStore _binaryMerkleTreeStore;
         private readonly ITxHub _txHub;
-        private readonly IChainDao _chainDao;
-        private readonly IStateDao _stateDao;
+        private readonly IChainStore _chainStore;
+        private readonly IStateStore _stateStore;
         private readonly DPoSInfoProvider _dpoSInfoProvider;
 
         private static bool _executing;
@@ -47,18 +47,18 @@ namespace AElf.Synchronization.BlockExecution
         private static bool _isLimitExecutionTime;
 
         public BlockExecutor(IChainService chainService, IExecutingService executingService,
-            ITransactionResultDao transactionResultDao, ClientManager clientManager,
-            IBinaryMerkleTreeDao binaryMerkleTreeDao, ITxHub txHub, IChainDao chainDao, IStateDao stateDao)
+            ITransactionResultStore transactionResultStore, ClientManager clientManager,
+            IBinaryMerkleTreeStore binaryMerkleTreeStore, ITxHub txHub, IChainStore chainStore, IStateStore stateStore)
         {
             _chainService = chainService;
             _executingService = executingService;
-            _transactionResultDao = transactionResultDao;
+            _transactionResultStore = transactionResultStore;
             _clientManager = clientManager;
-            _binaryMerkleTreeDao = binaryMerkleTreeDao;
+            _binaryMerkleTreeStore = binaryMerkleTreeStore;
             _txHub = txHub;
-            _chainDao = chainDao;
-            _stateDao = stateDao;
-            _dpoSInfoProvider = new DPoSInfoProvider(_stateDao);
+            _chainStore = chainStore;
+            _stateStore = stateStore;
+            _dpoSInfoProvider = new DPoSInfoProvider(_stateStore);
 
             _logger = LogManager.GetLogger(nameof(BlockExecutor));
 
@@ -472,7 +472,7 @@ namespace AElf.Synchronization.BlockExecution
             {
                 r.BlockNumber = bn;
                 r.BlockHash = bh;
-                await _transactionResultDao.AddTransactionResultAsync(r);
+                await _transactionResultStore.AddTransactionResultAsync(r);
             });
         }
 
@@ -484,9 +484,9 @@ namespace AElf.Synchronization.BlockExecution
         /// <returns></returns>
         private async Task UpdateCrossChainInfo(IBlock block, List<TransactionResult> txnRes)
         {
-            await _binaryMerkleTreeDao.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree,
+            await _binaryMerkleTreeStore.AddTransactionsMerkleTreeAsync(block.Body.BinaryMerkleTree,
                 block.Header.ChainId, block.Header.Index);
-            await _binaryMerkleTreeDao.AddSideChainTransactionRootsMerkleTreeAsync(
+            await _binaryMerkleTreeStore.AddSideChainTransactionRootsMerkleTreeAsync(
                 block.Body.BinaryMerkleTreeForSideChainTransactionRoots, block.Header.ChainId, block.Header.Index);
 
             // update side chain block info if execution succeed
@@ -496,7 +496,7 @@ namespace AElf.Synchronization.BlockExecution
                     // Todo: _clientManager would be chaos if this happened.
                     throw new InvalidCrossChainInfoException(
                         "Inconsistent side chain info. Something about side chain would be chaos if you see this. ", BlockExecutionResult.InvalidSideChainInfo);*/
-                await _chainDao.UpdateCurrentBlockHeightAsync(blockInfo.ChainId, blockInfo.Height);
+                await _chainStore.UpdateCurrentBlockHeightAsync(blockInfo.ChainId, blockInfo.Height);
             }
 
             // update parent chain info

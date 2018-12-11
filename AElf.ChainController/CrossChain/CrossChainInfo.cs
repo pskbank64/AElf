@@ -13,10 +13,10 @@ namespace AElf.ChainController.CrossChain
     {
         private readonly CrossChainHelper _crossChainHelper;
 
-        public CrossChainInfo(IStateDao stateDao)
+        public CrossChainInfo(IStateStore stateStore)
         {
             var chainId = Hash.LoadHex(ChainConfig.Instance.ChainId);
-            _crossChainHelper = new CrossChainHelper(chainId, stateDao);
+            _crossChainHelper = new CrossChainHelper(chainId, stateStore);
         }
 
         /// <summary>

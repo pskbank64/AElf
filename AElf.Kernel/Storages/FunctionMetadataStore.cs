@@ -6,12 +6,12 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public class FunctionMetadataDao : IFunctionMetadataDao
+    public class FunctionMetadataStore : IFunctionMetadataStore
     {
         private readonly IKeyValueDatabase _database;
         private const string _dbName = "FunctionMetadata";
 
-        public FunctionMetadataDao(IKeyValueDatabase database)
+        public FunctionMetadataStore(IKeyValueDatabase database)
         {
             _database = database;
         }

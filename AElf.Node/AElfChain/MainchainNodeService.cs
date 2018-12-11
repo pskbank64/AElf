@@ -31,7 +31,7 @@ namespace AElf.Node.AElfChain
     {
         private readonly ILogger _logger;
         private readonly ITxHub _txHub;
-        private readonly IStateDao _stateDao;
+        private readonly IStateStore _stateStore;
         private readonly IMiner _miner;
         private readonly IChainService _chainService;
         private readonly IChainCreationService _chainCreationService;
@@ -47,10 +47,10 @@ namespace AElf.Node.AElfChain
         // todo temp solution because to get the dlls we need the launchers directory (?)
         private string _assemblyDir;
 
-        public MainchainNodeService(IStateDao stateDao, ITxHub hub, IChainCreationService chainCreationService,
+        public MainchainNodeService(IStateStore stateStore, ITxHub hub, IChainCreationService chainCreationService,
             IBlockSynchronizer blockSynchronizer, IChainService chainService, IMiner miner, ILogger logger)
         {
-            _stateDao = stateDao;
+            _stateStore = stateStore;
             _chainCreationService = chainCreationService;
             _chainService = chainService;
             _txHub = hub;
@@ -297,7 +297,7 @@ namespace AElf.Node.AElfChain
             switch (ConsensusConfig.Instance.ConsensusType)
             {
                 case ConsensusType.AElfDPoS:
-                    _consensus = new DPoS(_stateDao, _txHub, _miner, _chainService);
+                    _consensus = new DPoS(_stateStore, _txHub, _miner, _chainService);
                     break;
 
                 case ConsensusType.SingleNode:

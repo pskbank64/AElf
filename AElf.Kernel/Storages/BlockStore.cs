@@ -8,16 +8,16 @@ using NLog;
 
 namespace AElf.Kernel.Persistence
 {
-    public class BlockDao : IBlockDao
+    public class BlockStore : IBlockStore
     {
         private readonly ILogger _logger;
         private readonly IKeyValueDatabase _database;
         private const string _dbName = "Block";
 
-        public BlockDao(IKeyValueDatabase database)
+        public BlockStore(IKeyValueDatabase database)
         {
             _database = database;
-            _logger = LogManager.GetLogger(nameof(BlockDao));
+            _logger = LogManager.GetLogger(nameof(BlockStore));
         }
 
         public async Task AddBlockBodyAsync(Hash blockHash, BlockBody blockBody)

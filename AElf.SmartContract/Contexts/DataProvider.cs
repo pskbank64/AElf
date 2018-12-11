@@ -15,17 +15,17 @@ namespace AElf.SmartContract
 {
     public class DataProvider : IDataProvider
     {
-        private IStateDao _stateDao;
+        private IStateStore _stateStore;
 
-        public IStateDao StateDao
+        public IStateStore StateStore
         {
-            get { return _stateDao; }
+            get { return _stateStore; }
             set
             {
-                _stateDao = value;
+                _stateStore = value;
                 foreach (var child in _children)
                 {
-                    child.StateDao = value;
+                    child.StateStore = value;
                 }
             }
         }
@@ -67,7 +67,7 @@ namespace AElf.SmartContract
             }
 
             var path = new List<ByteString>(Path) {ByteString.Empty, ByteString.CopyFromUtf8(name)};
-            var child = new DataProvider(ChainId, ContractAddress, path) {StateDao = _stateDao};
+            var child = new DataProvider(ChainId, ContractAddress, path) {StateStore = _stateStore};
             _children.Add(child);
             return child;
         }
@@ -94,7 +94,7 @@ namespace AElf.SmartContract
                 return value.Get();
             }
 
-            var bytes = await _stateDao.GetAsync(GetStatePathFor(key));
+            var bytes = await _stateStore.GetAsync(GetStatePathFor(key));
             _cache[key] = StateValue.Create(bytes);
             return bytes;
         }

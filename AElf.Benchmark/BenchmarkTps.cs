@@ -28,7 +28,7 @@ namespace AElf.Benchmark
         private readonly ILogger _logger;
         private readonly BenchmarkOptions _options;
         private readonly IExecutingService _executingService;
-        private readonly IStateDao _stateDao;
+        private readonly IStateStore _stateStore;
 
         private readonly ServicePack _servicePack;
 
@@ -51,12 +51,12 @@ namespace AElf.Benchmark
             }
         }
 
-        public Benchmarks(IStateDao stateDao, IChainCreationService chainCreationService,
+        public Benchmarks(IStateStore stateStore, IChainCreationService chainCreationService,
             IChainContextService chainContextService, ISmartContractService smartContractService,
             ILogger logger, IFunctionMetadataService functionMetadataService,BenchmarkOptions options, IExecutingService executingService)
         {
             ChainId = Hash.Generate();
-            _stateDao = stateDao;
+            _stateStore = stateStore;
             _chainCreationService = chainCreationService;
             _smartContractService = smartContractService;
             _logger = logger;
@@ -69,7 +69,7 @@ namespace AElf.Benchmark
                 ChainContextService = chainContextService,
                 SmartContractService = _smartContractService,
                 ResourceDetectionService = new ResourceUsageDetectionService(functionMetadataService),
-                StateDao = _stateDao
+                StateStore = _stateStore
             };
 
             _dataGenerater = new TransactionDataGenerator(options);
@@ -267,7 +267,7 @@ namespace AElf.Benchmark
             try
             {
                 await executive.SetTransactionContext(txnCtxt).Apply();
-                await txnCtxt.Trace.CommitChangesAsync(_stateDao);
+                await txnCtxt.Trace.CommitChangesAsync(_stateStore);
             }
             finally
             {
@@ -304,7 +304,7 @@ namespace AElf.Benchmark
             try
             {
                 await executiveUser.SetTransactionContext(txnInitCtxt).Apply();
-                await txnInitCtxt.Trace.CommitChangesAsync(_stateDao);
+                await txnInitCtxt.Trace.CommitChangesAsync(_stateStore);
             }
             finally
             {

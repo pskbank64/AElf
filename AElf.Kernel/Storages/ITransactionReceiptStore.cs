@@ -4,7 +4,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface ITransactionReceiptDao
+    public interface ITransactionReceiptStore
     {
         Task AddOrUpdateReceiptAsync(TransactionReceipt receipt);
         Task AddOrUpdateReceiptsAsync(IEnumerable<TransactionReceipt> receipts);

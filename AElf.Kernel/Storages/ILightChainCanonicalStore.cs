@@ -4,7 +4,7 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface ILightChainCanonicalDao
+    public interface ILightChainCanonicalStore
     {
         Task AddOrUpdateAsync(Hash key, Hash Canonical);
 

@@ -6,12 +6,12 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public class SmartContractDao : ISmartContractDao
+    public class SmartContractStore : ISmartContractStore
     {
         private readonly IKeyValueDatabase _database;
         private const string _dbName = "Block";
 
-        public SmartContractDao(IKeyValueDatabase database)
+        public SmartContractStore(IKeyValueDatabase database)
         {
             _database = database;
         }

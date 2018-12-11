@@ -7,13 +7,13 @@ using AElf.Database;
 
 namespace AElf.Kernel.Persistence
 {
-    public class StateDao : IStateDao
+    public class StateStore : IStateStore
     {
         private readonly IKeyValueDatabase _keyValueDatabase;
         
         private const string _dbName = "State";
 
-        public StateDao(IKeyValueDatabase keyValueDatabase)
+        public StateStore(IKeyValueDatabase keyValueDatabase)
         {
             _keyValueDatabase = keyValueDatabase;
         }

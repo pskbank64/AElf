@@ -22,14 +22,14 @@ namespace AElf.Kernel.Consensus
         private readonly Miners _miners;
         private readonly ILogger _logger;
         private readonly Address _contractAddressHash;
-        private readonly IStateDao _stateDao;
+        private readonly IStateStore _stateStore;
 
         private DataProvider DataProvider
         {
             get
             {
                 var dp = DataProvider.GetRootDataProvider(_chainId, _contractAddressHash);
-                dp.StateDao = _stateDao;
+                dp.StateStore = _stateStore;
                 return dp;
             }
         }
@@ -153,12 +153,12 @@ namespace AElf.Kernel.Consensus
                 : DataProvider.GetAsync<T>(keyHash).Result;
         }
 
-        public AElfDPoSHelper(Hash chainId, Miners miners, Address contractAddressHash, IStateDao stateDao)
+        public AElfDPoSHelper(Hash chainId, Miners miners, Address contractAddressHash, IStateStore stateStore)
         {
             _chainId = chainId;
             _miners = miners;
             _contractAddressHash = contractAddressHash;
-            _stateDao = stateDao;
+            _stateStore = stateStore;
 
             _logger = LogManager.GetLogger(nameof(AElfDPoSHelper));
         }

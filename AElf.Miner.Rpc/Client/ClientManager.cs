@@ -32,7 +32,7 @@ namespace AElf.Miner.Rpc.Client
         private readonly ICrossChainInfo _crossChainInfo;
         private CertificateStore _certificateStore;
         private readonly ILogger _logger;
-        private readonly IChainDao _chainDao;
+        private readonly IChainStore _chainStore;
         private Dictionary<string, Uri> ChildChains => GrpcRemoteConfig.Instance.ChildChains;
         private CancellationTokenSource _tokenSourceToSideChain;
         private CancellationTokenSource _tokenSourceToParentChain;
@@ -43,10 +43,10 @@ namespace AElf.Miner.Rpc.Client
         /// </summary>
         private int WaitingIntervalInMillisecond => GrpcLocalConfig.Instance.WaitingIntervalInMillisecond;
 
-        public ClientManager(ILogger logger, IChainDao chainDao, ICrossChainInfo crossChainInfo)
+        public ClientManager(ILogger logger, IChainStore chainStore, ICrossChainInfo crossChainInfo)
         {
             _logger = logger;
-            _chainDao = chainDao;
+            _chainStore = chainStore;
             _crossChainInfo = crossChainInfo;
             GrpcRemoteConfig.ConfigChanged += GrpcRemoteConfigOnConfigChanged;
         }
@@ -98,7 +98,7 @@ namespace AElf.Miner.Rpc.Client
 
         private async Task<ulong> GetSideChainTargetHeight(Hash chainId)
         {
-            var height = await _chainDao.GetCurrentBlockHeightAsync(chainId);
+            var height = await _chainStore.GetCurrentBlockHeightAsync(chainId);
             return height == 0 ? GlobalConfig.GenesisBlockHeight : height + 1;
         }
         
@@ -263,7 +263,7 @@ namespace AElf.Miner.Rpc.Client
         /// <returns></returns>
         private async Task UpdateCrossChainInfo(IBlockInfo blockInfo)
         {
-            await _chainDao.UpdateCurrentBlockHeightAsync(blockInfo.ChainId, blockInfo.Height);
+            await _chainStore.UpdateCurrentBlockHeightAsync(blockInfo.ChainId, blockInfo.Height);
         }
 
         public bool TryGetSideChainBlockInfo(SideChainBlockInfo scb)

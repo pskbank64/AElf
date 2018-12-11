@@ -6,12 +6,12 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public class CallingGraphDao : ICallingGraphDao
+    public class CallingGraphStore : ICallingGraphStore
     {
         private readonly IKeyValueDatabase _database;
         private const string _dbName = "CallingGraph";
 
-        public CallingGraphDao(IKeyValueDatabase database)
+        public CallingGraphStore(IKeyValueDatabase database)
         {
             _database = database;
         }

@@ -9,14 +9,14 @@ namespace AElf.ChainController.Rpc
 {
     public class TransactionResultService : ITransactionResultService
     {
-        private readonly ITransactionResultDao _transactionResultDao;
+        private readonly ITransactionResultStore _transactionResultStore;
         private readonly ITxHub _txHub;
         private readonly Dictionary<Hash, TransactionResult> _cacheResults = new Dictionary<Hash, TransactionResult>();
 
-        public TransactionResultService(ITxHub txHub, ITransactionResultDao transactionResultDao)
+        public TransactionResultService(ITxHub txHub, ITransactionResultStore transactionResultStore)
         {
             _txHub = txHub;
-            _transactionResultDao = transactionResultDao;
+            _transactionResultStore = transactionResultStore;
         }
 
         /// <inheritdoc/>
@@ -30,7 +30,7 @@ namespace AElf.ChainController.Rpc
 
             
             // in storage
-            var res = await _transactionResultDao.GetTransactionResultAsync(txId);
+            var res = await _transactionResultStore.GetTransactionResultAsync(txId);
             if (res != null)
             {
                 _cacheResults[txId] = res;
@@ -59,7 +59,7 @@ namespace AElf.ChainController.Rpc
         public async Task AddResultAsync(TransactionResult res)
         {
             _cacheResults[res.TransactionId] = res;
-            await _transactionResultDao.AddTransactionResultAsync(res);
+            await _transactionResultStore.AddTransactionResultAsync(res);
         }
     }
 }

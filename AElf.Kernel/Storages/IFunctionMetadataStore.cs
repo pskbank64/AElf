@@ -4,7 +4,7 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface IFunctionMetadataDao
+    public interface IFunctionMetadataStore
     {
         Task AddOrUpdateAsync(Hash key, FunctionMetadata functionMetadata);
 

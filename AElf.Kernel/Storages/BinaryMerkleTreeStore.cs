@@ -6,12 +6,12 @@ using Google.Protobuf;
 
 namespace AElf.Kernel.Persistence
 {
-    public class BinaryMerkleTreeDao : IBinaryMerkleTreeDao
+    public class BinaryMerkleTreeStore : IBinaryMerkleTreeStore
     {
         private readonly IKeyValueDatabase _database;
         private const string _dbName = "BinaryMerkleTree";
 
-        public BinaryMerkleTreeDao(IKeyValueDatabase database)
+        public BinaryMerkleTreeStore(IKeyValueDatabase database)
         {
             _database = database;
         }

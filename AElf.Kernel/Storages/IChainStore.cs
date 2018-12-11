@@ -3,7 +3,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface IChainDao
+    public interface IChainStore
     {
         Task AddChainAsync(Hash chainId, Hash genesisBlockHash);
         Task<Hash> GetGenesisBlockHashAsync(Hash chainId);

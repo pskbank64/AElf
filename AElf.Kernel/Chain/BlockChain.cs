@@ -15,23 +15,23 @@ namespace AElf.Kernel
 {
     public class BlockChain : LightChain, IBlockChain
     {
-        private readonly ITransactionDao _transactionDao;
-        private readonly ITransactionTraceDao _transactionTraceDao;
-        private readonly IStateDao _stateDao;
+        private readonly ITransactionStore _transactionStore;
+        private readonly ITransactionTraceStore _transactionTraceStore;
+        private readonly IStateStore _stateStore;
 
         private readonly ILogger _logger;
         private static bool _doingRollback;
         private static bool _prepareTerminated;
         private static bool _terminated;
 
-        public BlockChain(Hash chainId, IChainDao chainDao, IBlockDao blockDao,
-            ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao,
-            IStateDao stateDao, ILightChainCanonicalDao lightChainCanonicalDao) : base(
-            chainId, chainDao, blockDao, lightChainCanonicalDao)
+        public BlockChain(Hash chainId, IChainStore chainStore, IBlockStore blockStore,
+            ITransactionStore transactionStore, ITransactionTraceStore transactionTraceStore,
+            IStateStore stateStore, ILightChainCanonicalStore lightChainCanonicalStore) : base(
+            chainId, chainStore, blockStore, lightChainCanonicalStore)
         {
-            _transactionDao = transactionDao;
-            _transactionTraceDao = transactionTraceDao;
-            _stateDao = stateDao;
+            _transactionStore = transactionStore;
+            _transactionTraceStore = transactionTraceStore;
+            _stateStore = stateStore;
 
             _doingRollback = false;
             _prepareTerminated = false;
@@ -58,7 +58,7 @@ namespace AElf.Kernel
 
         public async Task<bool> HasBlock(Hash blockId)
         {
-            var blk = await _blockDao.GetBlockAsync(blockId);
+            var blk = await BlockStore.GetBlockAsync(blockId);
             return blk != null;
         }
 
@@ -72,7 +72,7 @@ namespace AElf.Kernel
             await AddHeaderAsync(block.Header);
             // TODO: This will be problematic if the block is used somewhere else after this method
             block.Body.TransactionList.Clear();
-            await _blockDao.AddBlockBodyAsync(block.Header.GetHash(), block.Body);
+            await BlockStore.AddBlockBodyAsync(block.Header.GetHash(), block.Body);
         }
 
         public async Task AddBlocksAsync(IEnumerable<IBlock> blocks)
@@ -85,7 +85,7 @@ namespace AElf.Kernel
 
         public async Task<IBlock> GetBlockByHashAsync(Hash blockId)
         {
-            return await _blockDao.GetBlockAsync(blockId);
+            return await BlockStore.GetBlockAsync(blockId);
         }
 
         public async Task<IBlock> GetBlockByHeightAsync(ulong height)
@@ -136,12 +136,12 @@ namespace AElf.Kernel
                     var body = block.Body;
                     foreach (var txId in body.Transactions)
                     {
-                        var tx = await _transactionDao.GetTransaction(txId);
+                        var tx = await _transactionStore.GetTransaction(txId);
                         txs.Add(tx);
                     }
 
                     var h = GetHeightHash(i).OfType(HashType.CanonicalHash);
-                    await _lightChainCanonicalDao.RemoveAsync(h);
+                    await LightChainCanonicalStore.RemoveAsync(h);
                     await RollbackSideChainInfo(block);
                     await RollbackStateForBlock(block);
                     blocks.Add((Block) block);
@@ -151,7 +151,7 @@ namespace AElf.Kernel
 
                 var hash = await GetCanonicalHashAsync(height);
 
-                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, hash);
+                await ChainStore.UpdateCurrentBlockHashAsync(_chainId, hash);
 
                 MessageHub.Instance.Publish(new BranchRolledBack(blocks));
                 _logger?.Trace("Finished rollback to " + height);
@@ -174,7 +174,7 @@ namespace AElf.Kernel
         {
             foreach (var info in block.Body.IndexedInfo)
             {
-                await _chainDao.UpdateCurrentBlockHeightAsync(info.ChainId,
+                await ChainStore.UpdateCurrentBlockHeightAsync(info.ChainId,
                     info.Height > GlobalConfig.GenesisBlockHeight ? info.Height - 1 : 0);
             }
         }
@@ -192,14 +192,14 @@ namespace AElf.Kernel
             var origValues = new Dictionary<StatePath, byte[]>();
             foreach (var txId in txIds.Reverse())
             {
-                var trace = await _transactionTraceDao.GetTransactionTraceAsync(txId, disambiguationHash);
+                var trace = await _transactionTraceStore.GetTransactionTraceAsync(txId, disambiguationHash);
                 foreach (var kv in trace.StateChanges)
                 {
                     origValues[kv.StatePath] = kv.StateValue.OriginalValue.ToByteArray();
                 }
             }
 
-            await _stateDao.PipelineSetDataAsync(origValues);
+            await _stateStore.PipelineSetDataAsync(origValues);
         }
     }
 }

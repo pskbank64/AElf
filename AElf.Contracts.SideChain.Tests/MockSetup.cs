@@ -32,8 +32,8 @@ namespace AElf.Contracts.SideChain.Tests
             }
     
             public Hash ChainId1 { get; } = Hash.FromString("ChainId1");
-            public IStateDao StateDao { get; private set; }
-            public ISmartContractDao SmartContractDao;
+            public IStateStore StateStore { get; private set; }
+            public ISmartContractStore SmartContractStore;
             public ISmartContractService SmartContractService;
             public IChainService ChainService;
             private IFunctionMetadataService _functionMetadataService;
@@ -43,7 +43,7 @@ namespace AElf.Contracts.SideChain.Tests
             private ISmartContractRunnerFactory _smartContractRunnerFactory;
             private ILogger _logger;
             private IKeyValueDatabase _database;
-            private ILightChainCanonicalDao _lightChainCanonicalDao;
+            private ILightChainCanonicalStore _lightChainCanonicalStore;
 
             public MockSetup(ILogger logger)
             {
@@ -54,34 +54,34 @@ namespace AElf.Contracts.SideChain.Tests
             private void Initialize()
             {
                 NewStorage();
-                var transactionManager = new TransactionDao(_database);
-                var transactionTraceManager = new TransactionTraceDao(_database);
-                var callingGraphDao = new CallingGraphDao(_database);
-                var functionMetadataDao = new FunctionMetadataDao(_database);
-                _functionMetadataService = new FunctionMetadataService(callingGraphDao, functionMetadataDao, _logger);
-                var chainManagerBasic = new ChainDao(_database);
-                _lightChainCanonicalDao =new LightChainCanonicalDao(_database);
-                ChainService = new ChainService(chainManagerBasic, new BlockDao(_database),
-                    transactionManager, transactionTraceManager, StateDao, _lightChainCanonicalDao);
+                var transactionManager = new TransactionStore(_database);
+                var transactionTraceManager = new TransactionTraceStore(_database);
+                var callingGraphStore = new CallingGraphStore(_database);
+                var functionMetadataStore = new FunctionMetadataStore(_database);
+                _functionMetadataService = new FunctionMetadataService(callingGraphStore, functionMetadataStore, _logger);
+                var chainManagerBasic = new ChainStore(_database);
+                _lightChainCanonicalStore =new LightChainCanonicalStore(_database);
+                ChainService = new ChainService(chainManagerBasic, new BlockStore(_database),
+                    transactionManager, transactionTraceManager, StateStore, _lightChainCanonicalStore);
                 _smartContractRunnerFactory = new SmartContractRunnerFactory();
                 var runner = new SmartContractRunner("../../../../AElf.Runtime.CSharp.Tests.TestContract/bin/Debug/netstandard2.0/");
                 _smartContractRunnerFactory.AddRunner(0, runner);
                 _chainCreationService = new ChainCreationService(ChainService,
-                    new SmartContractService(new SmartContractDao(_database), _smartContractRunnerFactory,
-                        StateDao, _functionMetadataService), _logger);
-                SmartContractDao = new SmartContractDao(_database);
+                    new SmartContractService(new SmartContractStore(_database), _smartContractRunnerFactory,
+                        StateStore, _functionMetadataService), _logger);
+                SmartContractStore = new SmartContractStore(_database);
                 Task.Factory.StartNew(async () =>
                 {
                     await Init();
                 }).Unwrap().Wait();
-                SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory, StateDao, _functionMetadataService);
-                ChainService = new ChainService(new ChainDao(_database), new BlockDao(_database), new TransactionDao(_database), new TransactionTraceDao(_database), StateDao,_lightChainCanonicalDao);
+                SmartContractService = new SmartContractService(SmartContractStore, _smartContractRunnerFactory, StateStore, _functionMetadataService);
+                ChainService = new ChainService(new ChainStore(_database), new BlockStore(_database), new TransactionStore(_database), new TransactionTraceStore(_database), StateStore,_lightChainCanonicalStore);
             }
 
             private void NewStorage()
             {
                 _database = new InMemoryDatabase();
-                StateDao = new StateDao(_database);
+                StateStore = new StateStore(_database);
             }
             
             public byte[] SideChainCode

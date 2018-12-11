@@ -3,7 +3,7 @@ using AElf.Common;
 
 namespace AElf.Kernel.Persistence
 {
-    public interface IBlockDao
+    public interface IBlockStore
     {
         Task<BlockHeader> AddBlockHeaderAsync(BlockHeader header);
         Task AddBlockBodyAsync(Hash blockHash, BlockBody blockBody);

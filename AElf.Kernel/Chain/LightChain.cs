@@ -14,26 +14,26 @@ namespace AElf.Kernel
     public class LightChain : ILightChain
     {
         protected readonly Hash _chainId;
-        protected readonly IChainDao _chainDao;
-        protected readonly IBlockDao _blockDao;
-        protected readonly ILightChainCanonicalDao _lightChainCanonicalDao;
+        protected readonly IChainStore ChainStore;
+        protected readonly IBlockStore BlockStore;
+        protected readonly ILightChainCanonicalStore LightChainCanonicalStore;
 
         private readonly ILogger _logger;
         
         public LightChain(Hash chainId,
-            IChainDao chainDao,
-            IBlockDao blockDao, ILightChainCanonicalDao lightChainCanonicalDao, ILogger logger = null)
+            IChainStore chainStore,
+            IBlockStore blockStore, ILightChainCanonicalStore lightChainCanonicalStore, ILogger logger = null)
         {
             _chainId = chainId.Clone();
-            _chainDao = chainDao;
-            _blockDao = blockDao;
-            _lightChainCanonicalDao = lightChainCanonicalDao;
+            ChainStore = chainStore;
+            BlockStore = blockStore;
+            LightChainCanonicalStore = lightChainCanonicalStore;
             _logger = logger;
         }
 
         public async Task<ulong> GetCurrentBlockHeightAsync()
         {
-            var hash = await _chainDao.GetCurrentBlockHashAsync(_chainId);
+            var hash = await ChainStore.GetCurrentBlockHashAsync(_chainId);
             if (hash.IsNull())
             {
                 return GlobalConfig.GenesisBlockHeight;
@@ -44,13 +44,13 @@ namespace AElf.Kernel
         
         public async Task<Hash> GetCurrentBlockHashAsync()
         {
-            var hash = await _chainDao.GetCurrentBlockHashAsync(_chainId);
+            var hash = await ChainStore.GetCurrentBlockHashAsync(_chainId);
             return hash;
         }
 
         public async Task<bool> HasHeader(Hash blockHash)
         {
-            var header = await _blockDao.GetBlockHeaderAsync(blockHash);
+            var header = await BlockStore.GetBlockHeaderAsync(blockHash);
             return header != null;
         }
 
@@ -64,7 +64,7 @@ namespace AElf.Kernel
 
         public async Task<IBlockHeader> GetHeaderByHashAsync(Hash blockHash)
         {
-            return await _blockDao.GetBlockHeaderAsync(blockHash);
+            return await BlockStore.GetBlockHeaderAsync(blockHash);
         }
 
         public async Task<IBlockHeader> GetHeaderByHeightAsync(ulong height)
@@ -93,7 +93,7 @@ namespace AElf.Kernel
         protected async Task AddHeaderAsync(IBlockHeader header)
         {
             await CheckHeaderAppendable(header);
-            await _blockDao.AddBlockHeaderAsync((BlockHeader) header);
+            await BlockStore.AddBlockHeaderAsync((BlockHeader) header);
             await MaybeSwitchBranch(header);
             MessageHub.Instance.Publish((BlockHeader) header);
         }
@@ -105,7 +105,7 @@ namespace AElf.Kernel
 
         public async Task<Hash> GetCanonicalHashAsync(ulong height)
         {
-            var blockHash = await _lightChainCanonicalDao.GetAsync(GetHeightHash(height).OfType(HashType.CanonicalHash));
+            var blockHash = await LightChainCanonicalStore.GetAsync(GetHeightHash(height).OfType(HashType.CanonicalHash));
             return blockHash;
         }
 
@@ -117,10 +117,10 @@ namespace AElf.Kernel
             // TODO: more strict genesis
             if (blockHeader.Index == GlobalConfig.GenesisBlockHeight)
             {
-                var curHash = await _chainDao.GetCurrentBlockHashAsync(_chainId);
+                var curHash = await ChainStore.GetCurrentBlockHashAsync(_chainId);
                 if (curHash.IsNull())
                 {
-                    await _chainDao.AddChainAsync(_chainId, header.GetHash());
+                    await ChainStore.AddChainAsync(_chainId, header.GetHash());
                 }
                 return;
             }
@@ -189,8 +189,8 @@ namespace AElf.Kernel
             {
                 var hash = GetHeightHash(blockHeader.Index).OfType(HashType.CanonicalHash);
 //                hash.Height = blockHeader.Index;
-                await _lightChainCanonicalDao.AddOrUpdateAsync(hash, header.GetHash());
-                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
+                await LightChainCanonicalStore.AddOrUpdateAsync(hash, header.GetHash());
+                await ChainStore.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
                 return;
             }
             
@@ -201,14 +201,14 @@ namespace AElf.Kernel
             {
                 var hash = GetHeightHash(((BlockHeader) header).Index).OfType(HashType.CanonicalHash);
 //                hash.Height = ((BlockHeader) header).Index;
-                await _lightChainCanonicalDao.AddOrUpdateAsync(hash, header.GetHash());
-                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
+                await LightChainCanonicalStore.AddOrUpdateAsync(hash, header.GetHash());
+                await ChainStore.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
                 return;
             }
 
             if (((BlockHeader) header).Index > ((BlockHeader) currentHeader).Index)
             {
-                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
+                await ChainStore.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
                 var branches = await GetComparedBranchesAsync(currentHeader, header);
                 if (branches.Item2.Count > 0)
                 {
@@ -221,7 +221,7 @@ namespace AElf.Kernel
 
                         var hash = GetHeightHash(((BlockHeader) newBranchHeader).Index).OfType(HashType.CanonicalHash);
 //                        hash.Height = ((BlockHeader) newBranchHeader).Index;
-                        await _lightChainCanonicalDao.AddOrUpdateAsync(hash, newBranchHeader.GetHash());
+                        await LightChainCanonicalStore.AddOrUpdateAsync(hash, newBranchHeader.GetHash());
                     }
                 }
             }

@@ -41,7 +41,7 @@ namespace AElf.Kernel.Tests.Concurrency.Execution
 
         public Hash ChainId1 { get; } = Hash.FromString("ChainId1");
         public Hash ChainId2 { get; } = Hash.FromString("ChainId2");
-        public ISmartContractDao SmartContractDao;
+        public ISmartContractStore SmartContractStore;
         public ISmartContractService SmartContractService;
 
         public IChainContextService ChainContextService;
@@ -62,10 +62,10 @@ namespace AElf.Kernel.Tests.Concurrency.Execution
         private IFunctionMetadataService _functionMetadataService;
         private ILogger _logger;
 
-        private IStateDao _stateDao;
+        private IStateStore _stateStore;
         public IActorEnvironment ActorEnvironment { get; private set; }
 
-        private readonly TransactionDao _transactionDao;
+        private readonly TransactionStore _transactionStore;
 
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
 
@@ -73,25 +73,25 @@ namespace AElf.Kernel.Tests.Concurrency.Execution
             IChainService chainService, IActorEnvironment actorEnvironment,
             IChainContextService chainContextService, IFunctionMetadataService functionMetadataService,
             ISmartContractRunnerFactory smartContractRunnerFactory, ILogger logger,
-            IStateDao stateDao, TransactionDao transactionDao,IKeyValueDatabase database)
+            IStateStore stateStore, TransactionStore transactionStore,IKeyValueDatabase database)
         {
             _logger = logger;
-            _stateDao = stateDao;
+            _stateStore = stateStore;
             ActorEnvironment = actorEnvironment;
             if (!ActorEnvironment.Initialized)
             {
                 ActorEnvironment.InitActorSystem();
             }
-            _transactionDao = transactionDao;
+            _transactionStore = transactionStore;
             _chainCreationService = chainCreationService;
             _chainService = chainService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            SmartContractDao = new SmartContractDao(database);
+            SmartContractStore = new SmartContractStore(database);
             Task.Factory.StartNew(async () => { await Init(); }).Unwrap().Wait();
             SmartContractService =
-                new SmartContractService(SmartContractDao, _smartContractRunnerFactory, stateDao,
+                new SmartContractService(SmartContractStore, _smartContractRunnerFactory, stateStore,
                     functionMetadataService);
             Task.Factory.StartNew(async () => { await DeploySampleContracts(); }).Unwrap().Wait();
             ServicePack = new ServicePack()
@@ -99,7 +99,7 @@ namespace AElf.Kernel.Tests.Concurrency.Execution
                 ChainContextService = chainContextService,
                 SmartContractService = SmartContractService,
                 ResourceDetectionService = new NewMockResourceUsageDetectionService(),
-                StateDao = _stateDao
+                StateStore = _stateStore
             };
 
             // These are only required for workertest
@@ -147,7 +147,7 @@ namespace AElf.Kernel.Tests.Concurrency.Execution
 
         public async Task CommitTrace(TransactionTrace trace)
         {
-            await trace.CommitChangesAsync(_stateDao);
+            await trace.CommitChangesAsync(_stateStore);
 //            await StateDictator.ApplyCachedDataAction(changesDict);
         }
 

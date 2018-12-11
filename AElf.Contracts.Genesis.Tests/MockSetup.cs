@@ -31,9 +31,9 @@ namespace AElf.Contracts.Genesis.Tests
             return (ulong)n;
         }
 
-        public IStateDao StateDao { get; }
+        public IStateStore StateStore { get; }
         public Hash ChainId1 { get; } = Hash.Generate();
-        public ISmartContractDao SmartContractDao;
+        public ISmartContractStore SmartContractStore;
         public ISmartContractService SmartContractService;
         private IFunctionMetadataService _functionMetadataService;
 
@@ -49,28 +49,28 @@ namespace AElf.Contracts.Genesis.Tests
 
         private IKeyValueDatabase _database;
 
-        public MockSetup(IStateDao stateDao, IChainCreationService chainCreationService,
+        public MockSetup(IStateStore stateStore, IChainCreationService chainCreationService,
             ChainContextService chainContextService,
             IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory,
             IKeyValueDatabase database)
         {
-            StateDao = stateDao;
+            StateStore = stateStore;
             _chainCreationService = chainCreationService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
             _database = database;
-            SmartContractDao = new SmartContractDao(_database);
+            SmartContractStore = new SmartContractStore(_database);
             Task.Factory.StartNew(async () => { await Init(); }).Unwrap().Wait();
-            SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory,
-                stateDao, _functionMetadataService);
+            SmartContractService = new SmartContractService(SmartContractStore, _smartContractRunnerFactory,
+                stateStore, _functionMetadataService);
 
             ServicePack = new ServicePack()
             {
                 ChainContextService = chainContextService,
                 SmartContractService = SmartContractService,
                 ResourceDetectionService = null,
-                StateDao = stateDao
+                StateStore = stateStore
             };
          }
 

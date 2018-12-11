@@ -8,17 +8,17 @@ using NLog;
 
 namespace AElf.Kernel.Persistence
 {
-    public class ChainDao : IChainDao
+    public class ChainStore : IChainStore
     {
         private readonly IKeyValueDatabase _database;
         private readonly ILogger _logger;
         private const string _dbName = "Chain";
         private readonly Hash _sideChainIdListKey = Hash.FromString("SideChainIdList");
 
-        public ChainDao(IKeyValueDatabase database)
+        public ChainStore(IKeyValueDatabase database)
         {
             _database = database;
-            _logger = LogManager.GetLogger(nameof(ChainDao));
+            _logger = LogManager.GetLogger(nameof(ChainStore));
         }
 
         public async Task AddChainAsync(Hash chainId, Hash genesisBlockHash)

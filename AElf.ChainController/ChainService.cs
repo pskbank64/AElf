@@ -13,25 +13,25 @@ namespace AElf.ChainController
 {
     public class ChainService : IChainService
     {
-        private readonly IChainDao _chainManager;
-        private readonly IBlockDao _blockManager;
-        private readonly ITransactionDao _transactionDao;
-        private readonly ITransactionTraceDao _transactionTraceDao;
-        private readonly IStateDao _stateDao;
-        private readonly ILightChainCanonicalDao _lightChainCanonicalDao;
+        private readonly IChainStore _chainManager;
+        private readonly IBlockStore _blockManager;
+        private readonly ITransactionStore _transactionStore;
+        private readonly ITransactionTraceStore _transactionTraceStore;
+        private readonly IStateStore _stateStore;
+        private readonly ILightChainCanonicalStore _lightChainCanonicalStore;
 
         private readonly ConcurrentDictionary<Hash, BlockChain> _blockchains = new ConcurrentDictionary<Hash, BlockChain>();
 
-        public ChainService(IChainDao chainManager, IBlockDao blockManager,
-            ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao, 
-            IStateDao stateDao,ILightChainCanonicalDao lightChainCanonicalDao)
+        public ChainService(IChainStore chainManager, IBlockStore blockManager,
+            ITransactionStore transactionStore, ITransactionTraceStore transactionTraceStore, 
+            IStateStore stateStore,ILightChainCanonicalStore lightChainCanonicalStore)
         {
             _chainManager = chainManager;
             _blockManager = blockManager;
-            _transactionDao = transactionDao;
-            _transactionTraceDao = transactionTraceDao;
-            _stateDao = stateDao;
-            _lightChainCanonicalDao = lightChainCanonicalDao;
+            _transactionStore = transactionStore;
+            _transactionTraceStore = transactionTraceStore;
+            _stateStore = stateStore;
+            _lightChainCanonicalStore = lightChainCanonicalStore;
         }
 
         public IBlockChain GetBlockChain(Hash chainId)
@@ -47,15 +47,15 @@ namespace AElf.ChainController
                 return blockChain;
             }
 
-            blockChain = new BlockChain(chainId, _chainManager, _blockManager, _transactionDao,
-                _transactionTraceDao, _stateDao,_lightChainCanonicalDao);
+            blockChain = new BlockChain(chainId, _chainManager, _blockManager, _transactionStore,
+                _transactionTraceStore, _stateStore,_lightChainCanonicalStore);
             _blockchains.TryAdd(chainId, blockChain);
             return blockChain;
         }
 
         public ILightChain GetLightChain(Hash chainId)
         {
-            return new LightChain(chainId, _chainManager, _blockManager, _lightChainCanonicalDao);
+            return new LightChain(chainId, _chainManager, _blockManager, _lightChainCanonicalStore);
         }
     }
 }

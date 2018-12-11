@@ -27,9 +27,9 @@ namespace AElf.Contracts.Token.Tests
             return (ulong)n;
         }
 
-        public IStateDao StateDao { get; }
+        public IStateStore StateStore { get; }
         public Hash ChainId1 { get; } = Hash.Generate();
-        public ISmartContractDao SmartContractDao;
+        public ISmartContractStore SmartContractStore;
         public ISmartContractService SmartContractService { get; }
         private IFunctionMetadataService _functionMetadataService;
 
@@ -43,11 +43,11 @@ namespace AElf.Contracts.Token.Tests
 
         private ISmartContractRunnerFactory _smartContractRunnerFactory;
 
-        public MockSetup(IStateDao stateDao, ISmartContractService smartContractService,
+        public MockSetup(IStateStore stateStore, ISmartContractService smartContractService,
             IChainCreationService chainCreationService, IChainContextService chainContextService,
             IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory)
         {
-            StateDao = stateDao;
+            StateStore = stateStore;
             _chainCreationService = chainCreationService;
             ChainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
@@ -63,7 +63,7 @@ namespace AElf.Contracts.Token.Tests
                 ChainContextService = chainContextService,
                 SmartContractService = SmartContractService,
                 ResourceDetectionService = null,
-                StateDao = StateDao
+                StateStore = StateStore
             };
         }
 

@@ -29,9 +29,9 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
         private IChainCreationService _chainCreationService;
         private IChainContextService _chainContextService;
         private IChainService _chainService;
-        private ITransactionDao _transactionDao;
-        private IStateDao _stateDao;
-        private ISmartContractDao _smartContractDao;
+        private ITransactionStore _transactionStore;
+        private IStateStore _stateStore;
+        private ISmartContractStore _smartContractStore;
         private ISmartContractService _smartContractService;
         private IFunctionMetadataService _functionMetadataService;
 
@@ -39,20 +39,20 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
 
         private Hash ChainId { get; } = Hash.Generate();
 
-        public ContractTest(IStateDao stateDao,
+        public ContractTest(IStateStore stateStore,
             IChainCreationService chainCreationService, IChainService chainService,
-            ITransactionDao transactionDao, ISmartContractDao smartContractDao,
+            ITransactionStore transactionStore, ISmartContractStore smartContractStore,
             IChainContextService chainContextService, IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory)
         {
-            _stateDao = stateDao;
+            _stateStore = stateStore;
             _chainCreationService = chainCreationService;
             _chainService = chainService;
-            _transactionDao = transactionDao;
-            _smartContractDao = smartContractDao;
+            _transactionStore = transactionStore;
+            _smartContractStore = smartContractStore;
             _chainContextService = chainContextService;
             _functionMetadataService = functionMetadataService;
             _smartContractRunnerFactory = smartContractRunnerFactory;
-            _smartContractService = new SmartContractService(_smartContractDao, _smartContractRunnerFactory, stateDao, _functionMetadataService);
+            _smartContractService = new SmartContractService(_smartContractStore, _smartContractRunnerFactory, stateStore, _functionMetadataService);
         }
 
         private byte[] SmartContractZeroCode => ContractCodes.TestContractZeroCode;
@@ -72,7 +72,7 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
             var chain = await _chainCreationService.CreateNewChainAsync(ChainId, new List<SmartContractRegistration>{reg});
            
             var contractAddressZero = AddressHelpers.GetSystemContractAddress(ChainId, GlobalConfig.GenesisBasicContract);
-            var copy = await _smartContractDao.GetAsync(contractAddressZero);
+            var copy = await _smartContractStore.GetAsync(contractAddressZero);
 
             // throw exception if not registered
             Assert.Equal(reg, copy);
@@ -109,7 +109,7 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
 
             var executive = await _smartContractService.GetExecutiveAsync(contractAddressZero, ChainId);
             await executive.SetTransactionContext(txnCtxt).Apply();
-            await txnCtxt.Trace.CommitChangesAsync(_stateDao);
+            await txnCtxt.Trace.CommitChangesAsync(_stateStore);
             
             Assert.True(string.IsNullOrEmpty(txnCtxt.Trace.StdErr));
             
@@ -121,7 +121,7 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
                 ContractBytes = ByteString.CopyFrom(code),
                 ContractHash = Hash.FromRawBytes(code)
             };
-            var copy = await _smartContractDao.GetAsync(address);
+            var copy = await _smartContractStore.GetAsync(address);
 
             Assert.Equal(regExample, copy);
         }
@@ -159,7 +159,7 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
 
             var executive = await _smartContractService.GetExecutiveAsync(contractAddressZero, ChainId);
             await executive.SetTransactionContext(txnCtxt).Apply();
-            await txnCtxt.Trace.CommitChangesAsync(_stateDao);
+            await txnCtxt.Trace.CommitChangesAsync(_stateStore);
 
             var bs = txnCtxt.Trace.RetVal;
             var address = Address.FromRawBytes(bs.Data.DeserializeToBytes());
@@ -180,7 +180,7 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
             };
             var executiveUser = await _smartContractService.GetExecutiveAsync(address, ChainId);
             await executiveUser.SetTransactionContext(txnInitCtxt).Apply();
-            await txnInitCtxt.Trace.CommitChangesAsync(_stateDao);
+            await txnInitCtxt.Trace.CommitChangesAsync(_stateStore);
             
             #endregion initialize account balance
 
@@ -216,7 +216,7 @@ namespace AElf.Kernel.Tests.SmartContractExecuting
                 Transaction = txnBal
             };
             await executiveUser.SetTransactionContext(txnPrintcxt).Apply();
-            await txnPrintcxt.Trace.CommitChangesAsync(_stateDao);
+            await txnPrintcxt.Trace.CommitChangesAsync(_stateStore);
 
             //Assert.Equal((ulong)101, txnBalCtxt.Trace.RetVal.DeserializeToUInt64());
             #endregion
