@@ -48,7 +48,6 @@ namespace AElf.Miner.Tests
         private IChainService _chainService;
         private IBinaryMerkleTreeDao _binaryMerkleTreeDao;
         private IKeyValueDatabase _database;
-        private readonly IDataStore _dataStore;
         public readonly IStateDao StateDao;
         private IChainContextService _chainContextService;
         private ITxSignatureVerifier _signatureVerifier;
@@ -57,11 +56,10 @@ namespace AElf.Miner.Tests
         private IStateDao _stateDao;
         private ILightChainCanonicalDao _lightChainCanonicalDao;
 
-        public MockSetup(ILogger logger, IKeyValueDatabase database, IDataStore dataStore, IStateDao stateDao, ITxSignatureVerifier signatureVerifier, ITxRefBlockValidator refBlockValidator)
+        public MockSetup(ILogger logger, IKeyValueDatabase database, IStateDao stateDao, ITxSignatureVerifier signatureVerifier, ITxRefBlockValidator refBlockValidator)
         {
             _logger = logger;
             _database = database;
-            _dataStore = dataStore;
             StateDao = stateDao;
             _signatureVerifier = signatureVerifier;
             _refBlockValidator = refBlockValidator;
@@ -81,7 +79,7 @@ namespace AElf.Miner.Tests
             _chainDao = new ChainDao(_database);
             _lightChainCanonicalDao = new LightChainCanonicalDao(_database);
             _chainService = new ChainService(_chainDao, new BlockDao(_database),
-                _transactionDao, _transactionTraceDao, _dataStore, StateDao, _lightChainCanonicalDao);
+                _transactionDao, _transactionTraceDao, StateDao, _lightChainCanonicalDao);
             _smartContractRunnerFactory = new SmartContractRunnerFactory();
             /*var runner = new SmartContractRunner("../../../../AElf.SDK.CSharp/bin/Debug/netstandard2.0/");
             _smartContractRunnerFactory.AddRunner(0, runner);*/

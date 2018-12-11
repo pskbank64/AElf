@@ -19,7 +19,6 @@ namespace AElf.ChainController
         private readonly IBlockDao _blockManager;
         private readonly ITransactionDao _transactionDao;
         private readonly ITransactionTraceDao _transactionTraceDao;
-        private readonly IDataStore _dataStore;
         private readonly IStateDao _stateDao;
         private readonly ILightChainCanonicalDao _lightChainCanonicalDao;
 
@@ -27,13 +26,12 @@ namespace AElf.ChainController
 
         public ChainService(IChainDao chainManager, IBlockDao blockManager,
             ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao, 
-            IDataStore dataStore, IStateDao stateDao,ILightChainCanonicalDao lightChainCanonicalDao)
+            IStateDao stateDao,ILightChainCanonicalDao lightChainCanonicalDao)
         {
             _chainManager = chainManager;
             _blockManager = blockManager;
             _transactionDao = transactionDao;
             _transactionTraceDao = transactionTraceDao;
-            _dataStore = dataStore;
             _stateDao = stateDao;
             _lightChainCanonicalDao = lightChainCanonicalDao;
         }
@@ -52,14 +50,14 @@ namespace AElf.ChainController
             }
 
             blockChain = new BlockChain(chainId, _chainManager, _blockManager, _transactionDao,
-                _transactionTraceDao, _stateDao, _dataStore,_lightChainCanonicalDao);
+                _transactionTraceDao, _stateDao,_lightChainCanonicalDao);
             _blockchains.TryAdd(chainId, blockChain);
             return blockChain;
         }
 
         public ILightChain GetLightChain(Hash chainId)
         {
-            return new LightChain(chainId, _chainManager, _blockManager, _dataStore, _lightChainCanonicalDao);
+            return new LightChain(chainId, _chainManager, _blockManager, _lightChainCanonicalDao);
         }
     }
 }

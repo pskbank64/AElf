@@ -18,19 +18,17 @@ namespace AElf.Kernel
         protected readonly Hash _chainId;
         protected readonly IChainDao _chainDao;
         protected readonly IBlockDao _blockDao;
-        protected readonly IDataStore _dataStore;
         protected readonly ILightChainCanonicalDao _lightChainCanonicalDao;
 
         private readonly ILogger _logger;
         
         public LightChain(Hash chainId,
             IChainDao chainDao,
-            IBlockDao blockDao, IDataStore dataStore, ILightChainCanonicalDao lightChainCanonicalDao, ILogger logger = null)
+            IBlockDao blockDao, ILightChainCanonicalDao lightChainCanonicalDao, ILogger logger = null)
         {
             _chainId = chainId.Clone();
             _chainDao = chainDao;
             _blockDao = blockDao;
-            _dataStore = dataStore;
             _lightChainCanonicalDao = lightChainCanonicalDao;
             _logger = logger;
         }

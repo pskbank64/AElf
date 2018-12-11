@@ -21,7 +21,6 @@ namespace AElf.Synchronization.Tests
         private List<IBlockHeader> _sideChainHeaders = new List<IBlockHeader>();
         private List<IBlock> _blocks = new List<IBlock>();
         
-        private readonly IDataStore _dataStore;
         private readonly IStateDao _stateDao;
         private readonly ISmartContractDao _smartContractDao;
         private readonly IKeyValueDatabase _database;
@@ -36,9 +35,8 @@ namespace AElf.Synchronization.Tests
 
         private IBlockSynchronizer _blockSynchronizer;
 
-        public MockSetup(IDataStore dataStore, IStateDao stateDao, ITxHub txHub, IKeyValueDatabase database)
+        public MockSetup(IStateDao stateDao, ITxHub txHub, IKeyValueDatabase database)
         {
-            _dataStore = dataStore;
             _stateDao = stateDao;
             _database = database;
             

@@ -23,7 +23,6 @@ namespace AElf.Kernel
             builder.RegisterType<BlockDao>().As<IBlockDao>().SingleInstance();
             builder.RegisterType<ChainDao>().As<IChainDao>().SingleInstance();
             builder.RegisterType<BinaryMerkleTreeDao>().As<IBinaryMerkleTreeDao>().SingleInstance();
-            builder.RegisterType<DataStore>().As<IDataStore>().SingleInstance();
             builder.RegisterType<LightChainCanonicalDao>().As<ILightChainCanonicalDao>().SingleInstance();
             builder.RegisterType<FunctionMetadataDao>().As<IFunctionMetadataDao>().SingleInstance();
         }

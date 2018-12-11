@@ -28,8 +28,8 @@ namespace AElf.Kernel
 
         public BlockChain(Hash chainId, IChainDao chainDao, IBlockDao blockDao,
             ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao,
-            IStateDao stateDao, IDataStore dataStore, ILightChainCanonicalDao lightChainCanonicalDao) : base(
-            chainId, chainDao, blockDao, dataStore, lightChainCanonicalDao)
+            IStateDao stateDao, ILightChainCanonicalDao lightChainCanonicalDao) : base(
+            chainId, chainDao, blockDao, lightChainCanonicalDao)
         {
             _transactionDao = transactionDao;
             _transactionTraceDao = transactionTraceDao;

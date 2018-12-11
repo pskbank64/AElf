@@ -51,7 +51,7 @@ namespace AElf.Contracts.Genesis.Tests
         private IKeyValueDatabase _database;
 
         public MockSetup(IStateDao stateDao, IChainCreationService chainCreationService,
-            IDataStore dataStore, IChainContextService chainContextService,
+            ChainContextService chainContextService,
             IFunctionMetadataService functionMetadataService, ISmartContractRunnerFactory smartContractRunnerFactory,
             IKeyValueDatabase database)
         {

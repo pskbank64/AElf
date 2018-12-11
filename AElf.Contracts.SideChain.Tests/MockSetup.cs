@@ -44,7 +44,6 @@ namespace AElf.Contracts.SideChain.Tests
     
             private ISmartContractRunnerFactory _smartContractRunnerFactory;
             private ILogger _logger;
-            private IDataStore _dataStore;
             private IKeyValueDatabase _database;
             private ILightChainCanonicalDao _lightChainCanonicalDao;
 
@@ -65,7 +64,7 @@ namespace AElf.Contracts.SideChain.Tests
                 var chainManagerBasic = new ChainDao(_database);
                 _lightChainCanonicalDao =new LightChainCanonicalDao(_database);
                 ChainService = new ChainService(chainManagerBasic, new BlockDao(_database),
-                    transactionManager, transactionTraceManager, _dataStore, StateDao, _lightChainCanonicalDao);
+                    transactionManager, transactionTraceManager, StateDao, _lightChainCanonicalDao);
                 _smartContractRunnerFactory = new SmartContractRunnerFactory();
                 var runner = new SmartContractRunner("../../../../AElf.Runtime.CSharp.Tests.TestContract/bin/Debug/netstandard2.0/");
                 _smartContractRunnerFactory.AddRunner(0, runner);
@@ -78,14 +77,13 @@ namespace AElf.Contracts.SideChain.Tests
                     await Init();
                 }).Unwrap().Wait();
                 SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory, StateDao, _functionMetadataService);
-                ChainService = new ChainService(new ChainDao(_database), new BlockDao(_database), new TransactionDao(_database), new TransactionTraceDao(_database), _dataStore, StateDao,_lightChainCanonicalDao);
+                ChainService = new ChainService(new ChainDao(_database), new BlockDao(_database), new TransactionDao(_database), new TransactionTraceDao(_database), StateDao,_lightChainCanonicalDao);
             }
 
             private void NewStorage()
             {
                 _database = new InMemoryDatabase();
                 StateDao = new StateDao(_database);
-                _dataStore = new DataStore(_database);
             }
             
             public byte[] SideChainCode

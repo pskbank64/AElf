@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Common.Extensions;
+using AElf.Database;
+using AElf.Kernel.Persistence;
 using AElf.Kernel.Storages;
 using AElf.SmartContract;
 using AElf.Kernel.Tests.Concurrency.Scheduling;
@@ -17,14 +19,16 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
     [UseAutofacTestFramework]
     public class FunctionMetadataServiceTest
     {
-        private IDataStore _dataStore;
+        private readonly IFunctionMetadataDao _functionMetadataDao;
+        private readonly ICallingGraphDao _callingGraphDao;
         private readonly ISmartContractRunnerFactory _smartContractRunnerFactory;
         private readonly IFunctionMetadataService _functionMetadataService;
 
-        public FunctionMetadataServiceTest(IFunctionMetadataService functionMetadataService, IDataStore dataStore, ISmartContractRunnerFactory smartContractRunnerFactory)
+        public FunctionMetadataServiceTest(IFunctionMetadataService functionMetadataService, IKeyValueDatabase database, ISmartContractRunnerFactory smartContractRunnerFactory)
         {
             _functionMetadataService = functionMetadataService;
-            _dataStore = dataStore;
+            _functionMetadataDao = new FunctionMetadataDao(database);
+            _callingGraphDao = new CallingGraphDao(database);
             _smartContractRunnerFactory = smartContractRunnerFactory;
         }
 
@@ -53,14 +57,14 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 new HashSet<Resource>(new []
                 {
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific)
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func0")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func0")));
 
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource5", DataAccessMode.ReadOnlyAccountSharing) 
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func1")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func1")));
             
             await _functionMetadataService.DeployContract(chainId, addrB, contractBTemplate);
             
@@ -73,20 +77,20 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource5", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrB.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.AccountSpecific), 
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func0")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func0")));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(addrB.Value.ToByteArray().ToHex() + ".resource3", DataAccessMode.ReadOnlyAccountSharing), 
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func1")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func1")));
 
             await _functionMetadataService.DeployContract(chainId, addrA, contractATemplate);
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
-                new HashSet<Resource>()), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0(int)")));
+                new HashSet<Resource>()), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0(int)")));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -98,7 +102,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource0", DataAccessMode.AccountSpecific),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0")));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -109,7 +113,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func1")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func1")));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
@@ -117,7 +121,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func2"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func2"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -134,7 +138,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func3")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func3")));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -145,7 +149,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func4")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func4")));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -162,7 +166,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func5")));
+                })), await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func5")));
 
             var callGraph = new SerializedCallGraph
             {
@@ -229,7 +233,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     }
                 }
             };
-            Assert.Equal(callGraph, await _dataStore.GetAsync<SerializedCallGraph>(chainId.OfType(HashType.CallingGraph)));
+            Assert.Equal(callGraph, await _callingGraphDao.GetAsync(chainId.OfType(HashType.CallingGraph)));
         }
         [Fact]
         public async Task TestEmptyContract()
@@ -272,14 +276,14 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 new HashSet<Resource>(new []
                 {
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func0"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func0"))));
 
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource5", DataAccessMode.ReadOnlyAccountSharing) 
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrC.DumpHex() + ".Func1"))));
                         
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -290,18 +294,18 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource5", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrB.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.AccountSpecific), 
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func0"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func0"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(addrB.Value.ToByteArray().ToHex() + ".resource3", DataAccessMode.ReadOnlyAccountSharing), 
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrB.DumpHex() + ".Func1"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
-                new HashSet<Resource>()), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0(int)"))));
+                new HashSet<Resource>()), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0(int)"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -313,7 +317,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource0", DataAccessMode.AccountSpecific),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func0"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -324,7 +328,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func1"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
@@ -332,7 +336,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func2"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func2"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -349,7 +353,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func3"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func3"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -360,7 +364,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func4"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func4"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -377,42 +381,42 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource1", DataAccessMode.ReadOnlyAccountSharing),
                     new Resource(addrA.Value.ToByteArray().ToHex() + ".resource2", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func5"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, addrA.DumpHex() + ".Func5"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, contract1Addr.DumpHex() + ".Func1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, contract1Addr.DumpHex() + ".Func1"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, contract1Addr.DumpHex() + ".Func2"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, contract1Addr.DumpHex() + ".Func2"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract2Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, contract2Addr.DumpHex() + ".Func1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, contract2Addr.DumpHex() + ".Func1"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(),
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract2Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, contract2Addr.DumpHex() + ".Func2"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, contract2Addr.DumpHex() + ".Func2"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []{contract1Addr.DumpHex() + ".Func1"}),
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func1"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []{contract1Addr.DumpHex() + ".Func1"}),
@@ -420,13 +424,13 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
                     new Resource(refContractAddr.Value.ToByteArray().ToHex() + ".localRes", DataAccessMode.AccountSpecific)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func1_1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func1_1"))));
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []{contract1Addr.DumpHex() + ".Func2"}),
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func2"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func2"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -438,7 +442,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
                     new Resource(refContractAddr.Value.ToByteArray().ToHex() + ".localRes", DataAccessMode.AccountSpecific)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func2_1"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func2_1"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -449,7 +453,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func2_2"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func2_2"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -460,7 +464,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 new HashSet<Resource>(new []
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func3"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func3"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -472,7 +476,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
                     new Resource(contract2Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing)
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func4"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func4"))));
             
             Assert.Equal(new FunctionMetadata(
                 new HashSet<string>(new []
@@ -484,7 +488,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                 {
                     new Resource(contract1Addr.Value.ToByteArray().ToHex() + "._lock", DataAccessMode.ReadWriteAccountSharing),
                     new Resource(addrC.Value.ToByteArray().ToHex() + ".resource4", DataAccessMode.AccountSpecific),
-                })), (await _dataStore.GetAsync<FunctionMetadata>(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func5"))));
+                })), (await _functionMetadataDao.GetAsync(DataPath.CalculatePointerForMetadata(chainId, refContractAddr.DumpHex() + ".Func5"))));
             
             var callGraph = new SerializedCallGraph
             {
@@ -629,7 +633,7 @@ namespace AElf.Kernel.Tests.Concurrency.Metadata
                     }
                 }
             };
-            Assert.Equal(callGraph, await _dataStore.GetAsync<SerializedCallGraph>(chainId.OfType(HashType.CallingGraph)));
+            Assert.Equal(callGraph, await _callingGraphDao.GetAsync(chainId.OfType(HashType.CallingGraph)));
         }
     
     }
