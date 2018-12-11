@@ -7,8 +7,7 @@ using AElf.Common;
 using AElf.Kernel;
 using AElf.SmartContract;
 using AElf.Common;
-using AElf.Kernel.Managers;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 
 namespace AElf.Execution.Execution
 {

@@ -13,6 +13,7 @@ using AElf.Configuration.Config.Consensus;
 using AElf.Cryptography.ECDSA;
 using AElf.Kernel.Consensus;
 using AElf.Kernel.EventMessages;
+using AElf.Kernel.Persistence;
 using AElf.Miner.Miner;
 using AElf.Node;
 using AElf.Types.CSharp;
@@ -21,7 +22,6 @@ using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using NLog;
 using AElf.Miner.TxMemPool;
-using AElf.Kernel.Storages;
 using AElf.Kernel.Types.Common;
 using AElf.Synchronization.EventMessages;
 

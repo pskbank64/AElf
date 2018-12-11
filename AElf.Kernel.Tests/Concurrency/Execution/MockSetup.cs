@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AElf.Kernel.Storages;
-using AElf.Kernel.Managers;
 using Google.Protobuf;
 using AElf.ChainController;
 using AElf.SmartContract;
@@ -18,6 +16,7 @@ using NLog;
 using AElf.Common;
 using AElf.Database;
 using AElf.Execution.Execution;
+using AElf.Kernel.Persistence;
 using Address = AElf.Common.Address;
 
 namespace AElf.Kernel.Tests.Concurrency.Execution

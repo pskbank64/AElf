@@ -6,8 +6,6 @@
     using AElf.ChainController.CrossChain;
     using AElf.Execution;
     using AElf.Kernel;
-    using AElf.Kernel.Managers;
-    using AElf.Kernel.Storages;
     using AElf.SmartContract;
     using Google.Protobuf;
     using ServiceStack;

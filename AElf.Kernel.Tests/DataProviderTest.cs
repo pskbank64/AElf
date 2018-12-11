@@ -6,7 +6,7 @@ using System.Text;
 using AElf.Common;
 using AElf.Database;
 using AElf.Kernel;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 using AElf.SmartContract;
 using Google.Protobuf;
 using Google.Protobuf.Collections;

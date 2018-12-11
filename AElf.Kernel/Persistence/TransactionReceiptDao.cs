@@ -3,11 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Database;
-using AElf.Kernel.Storages;
 using AElf.Kernel.Types;
 using Google.Protobuf;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class TransactionReceiptDao : ITransactionReceiptDao
     {

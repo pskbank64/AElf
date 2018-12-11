@@ -5,7 +5,6 @@ using AElf.Common;
 using AElf.Common.Extensions;
 using AElf.Database;
 using AElf.Kernel.Persistence;
-using AElf.Kernel.Storages;
 using AElf.SmartContract;
 using AElf.Kernel.Tests.Concurrency.Scheduling;
 using AElf.Sdk.CSharp;

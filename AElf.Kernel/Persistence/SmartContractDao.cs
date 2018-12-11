@@ -1,11 +1,10 @@
 ﻿using System.Threading.Tasks;
-using AElf.Kernel.Storages;
-using AElf.Kernel.Types;
 using AElf.Common;
 using AElf.Database;
+using AElf.Kernel.Types;
 using Google.Protobuf;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class SmartContractDao : ISmartContractDao
     {

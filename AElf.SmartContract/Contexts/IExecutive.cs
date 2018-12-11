@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Kernel;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 
 namespace AElf.SmartContract
 {

@@ -16,12 +16,12 @@ using AElf.Kernel;
 using AElf.SmartContract;
 using AElf.Types.CSharp;
 using Google.Protobuf;
-using AElf.Kernel.Managers;
 using Newtonsoft.Json.Linq;
 using NLog;
 using SideChainInfo = AElf.Contracts.SideChain.SideChainInfo;
 using AElf.Common;
 using AElf.Configuration.Config.Chain;
+using AElf.Kernel.Persistence;
 
 namespace AElf.SideChain.Creation
 {

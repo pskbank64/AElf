@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AElf.Common.Attributes;
-using AElf.Kernel.Storages;
-using Google.Protobuf.WellKnownTypes;
-using NLog;
 using AElf.Common;
 using AElf.Database;
 using AElf.Kernel.Types;
 using Google.Protobuf;
+using NLog;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class BlockDao : IBlockDao
     {

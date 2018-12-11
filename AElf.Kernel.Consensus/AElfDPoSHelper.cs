@@ -6,7 +6,7 @@ using AElf.Common;
 using AElf.Common.Extensions;
 using AElf.Common.Attributes;
 using AElf.Configuration.Config.Consensus;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 using AElf.SmartContract;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;

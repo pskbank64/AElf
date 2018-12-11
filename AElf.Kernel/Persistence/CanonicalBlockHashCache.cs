@@ -1,13 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
+using AElf.Common;
 using AElf.Kernel.EventMessages;
 using Easy.MessageHub;
 using NLog;
-using AElf.Common;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class CanonicalBlockHashCache
     {

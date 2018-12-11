@@ -6,9 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 using AElf.Kernel;
-using AElf.Kernel.Storages;
 using AElf.Kernel.KernelAccount;
-using AElf.Kernel.Managers;
 using AElf.ChainController;
 using AElf.SmartContract;
 using AElf.Kernel.Tests;
@@ -20,6 +18,7 @@ using AElf.Runtime.CSharp;
 using Xunit.Frameworks.Autofac;
 using AElf.Common;
 using AElf.Database;
+using AElf.Kernel.Persistence;
 
 namespace AElf.Runtime.CSharp.Tests
 {

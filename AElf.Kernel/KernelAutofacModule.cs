@@ -1,6 +1,4 @@
-﻿using AElf.Kernel.Managers;
-using AElf.Kernel.Persistence;
-using AElf.Kernel.Storages;
+﻿using AElf.Kernel.Persistence;
 using Autofac;
 
 namespace AElf.Kernel

@@ -1,14 +1,11 @@
 using System;
-using System.Collections.Concurrent;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Database;
-using AElf.Kernel.Types;
-using Google.Protobuf;
 
-namespace AElf.Kernel.Storages
+namespace AElf.Kernel.Persistence
 {
     public class StateDao : IStateDao
     {

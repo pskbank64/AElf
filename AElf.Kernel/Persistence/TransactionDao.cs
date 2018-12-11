@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using AElf.Kernel.Storages;
-using NLog;
+﻿using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Database;
 using AElf.Kernel.Types;
 using Google.Protobuf;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class TransactionDao: ITransactionDao
     {

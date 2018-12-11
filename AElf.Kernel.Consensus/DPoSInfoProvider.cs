@@ -4,7 +4,7 @@ using AElf.Common;
 using AElf.Configuration;
 using AElf.Configuration.Config.Chain;
 using AElf.Configuration.Config.Consensus;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 using AElf.SmartContract;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;

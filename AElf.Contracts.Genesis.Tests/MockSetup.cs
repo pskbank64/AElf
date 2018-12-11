@@ -7,17 +7,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 using AElf.Kernel;
-using AElf.Kernel.Storages;
 using AElf.ChainController;
 using AElf.SmartContract;
 using AElf.Kernel.KernelAccount;
-using AElf.Kernel.Managers;
 using AElf.Execution;
 using Google.Protobuf;
 using ServiceStack;
 using AElf.Common;
 using AElf.Database;
 using AElf.Execution.Execution;
+using AElf.Kernel.Persistence;
 
 namespace AElf.Contracts.Genesis.Tests
 {

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Kernel.Storages;
 using Google.Protobuf;
 using NLog;
 using Org.BouncyCastle.Security;

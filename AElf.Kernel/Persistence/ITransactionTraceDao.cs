@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using AElf.Common;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public interface ITransactionTraceDao
     {

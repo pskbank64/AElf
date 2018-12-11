@@ -1,4 +1,4 @@
-﻿using AElf.Kernel.Storages;
+﻿using AElf.Kernel.Persistence;
 using AElf.SmartContract.Metadata;
 using Autofac;
 

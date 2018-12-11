@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Kernel.EventMessages;
-using AElf.Kernel.Managers;
-using AElf.Kernel.Storages;
 using Easy.MessageHub;
 using NLog;
 using AElf.Common;

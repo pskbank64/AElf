@@ -7,7 +7,7 @@ using AElf.Common;
 using AElf.Configuration;
 using AElf.Configuration.Config.Chain;
 using AElf.Kernel;
-using AElf.Kernel.Managers;
+using AElf.Kernel.Persistence;
 using AElf.Types.CSharp;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;

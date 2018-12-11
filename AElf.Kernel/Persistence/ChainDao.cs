@@ -1,14 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
-using AElf.Kernel.Storages;
-using Google.Protobuf.WellKnownTypes;
-using NLog;
+﻿using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Database;
 using AElf.Kernel.Types;
 using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
+using NLog;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class ChainDao : IChainDao
     {

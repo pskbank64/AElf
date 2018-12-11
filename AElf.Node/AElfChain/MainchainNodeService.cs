@@ -13,7 +13,7 @@ using AElf.Configuration.Config.Chain;
 using AElf.Configuration.Config.Consensus;
 using AElf.Kernel;
 using AElf.Kernel.Node;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 using AElf.Miner.Miner;
 using AElf.Miner.TxMemPool;
 using AElf.Node.EventMessages;

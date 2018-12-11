@@ -1,12 +1,10 @@
 using System.Threading.Tasks;
-using AElf.Kernel.Storages;
 using AElf.Common;
 using AElf.Database;
 using AElf.Kernel.Types;
 using Google.Protobuf;
-using NLog.Targets.Wrappers;
 
-namespace AElf.Kernel.Managers
+namespace AElf.Kernel.Persistence
 {
     public class BinaryMerkleTreeDao : IBinaryMerkleTreeDao
     {

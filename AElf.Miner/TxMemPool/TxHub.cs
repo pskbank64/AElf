@@ -12,7 +12,7 @@ using AElf.Configuration.Config.Chain;
 using AElf.Kernel;
 using AElf.Kernel.Consensus;
 using AElf.Kernel.EventMessages;
-using AElf.Kernel.Managers;
+using AElf.Kernel.Persistence;
 using AElf.Kernel.Types.Common;
 using AElf.Miner.EventMessages;
 using AElf.Miner.TxMemPool.RefBlockExceptions;

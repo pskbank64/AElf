@@ -4,7 +4,7 @@ using AElf.Common;
 using AElf.Configuration;
 using AElf.Configuration.Config.Chain;
 using AElf.Kernel;
-using AElf.Kernel.Storages;
+using AElf.Kernel.Persistence;
 using Google.Protobuf.WellKnownTypes;
 
 namespace AElf.ChainController.CrossChain
