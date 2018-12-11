@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Kernel;
 using AElf.Kernel.Managers;
+using AElf.Kernel.Persistence;
 using AElf.Kernel.Storages;
 using Akka.Dispatch;
 using ServiceStack;
@@ -20,12 +21,13 @@ namespace AElf.ChainController
         private readonly ITransactionTraceDao _transactionTraceDao;
         private readonly IDataStore _dataStore;
         private readonly IStateDao _stateDao;
+        private readonly ILightChainCanonicalDao _lightChainCanonicalDao;
 
         private readonly ConcurrentDictionary<Hash, BlockChain> _blockchains = new ConcurrentDictionary<Hash, BlockChain>();
 
         public ChainService(IChainDao chainManager, IBlockDao blockManager,
             ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao, 
-            IDataStore dataStore, IStateDao stateDao)
+            IDataStore dataStore, IStateDao stateDao,ILightChainCanonicalDao lightChainCanonicalDao)
         {
             _chainManager = chainManager;
             _blockManager = blockManager;
@@ -33,6 +35,7 @@ namespace AElf.ChainController
             _transactionTraceDao = transactionTraceDao;
             _dataStore = dataStore;
             _stateDao = stateDao;
+            _lightChainCanonicalDao = lightChainCanonicalDao;
         }
 
         public IBlockChain GetBlockChain(Hash chainId)
@@ -49,14 +52,14 @@ namespace AElf.ChainController
             }
 
             blockChain = new BlockChain(chainId, _chainManager, _blockManager, _transactionDao,
-                _transactionTraceDao, _stateDao, _dataStore);
+                _transactionTraceDao, _stateDao, _dataStore,_lightChainCanonicalDao);
             _blockchains.TryAdd(chainId, blockChain);
             return blockChain;
         }
 
         public ILightChain GetLightChain(Hash chainId)
         {
-            return new LightChain(chainId, _chainManager, _blockManager, _dataStore);
+            return new LightChain(chainId, _chainManager, _blockManager, _dataStore, _lightChainCanonicalDao);
         }
     }
 }

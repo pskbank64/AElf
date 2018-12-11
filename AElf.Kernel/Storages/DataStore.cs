@@ -65,25 +65,25 @@ namespace AElf.Kernel.Storages
                 throw;
             }
         }
-
-        public async Task RemoveAsync<T>(Hash pointerHash) where T : IMessage
-        {
-            try
-            {
-                if (pointerHash == null)
-                {
-                    throw new Exception("Pointer hash cannot be null.");
-                }
-
-                var typeName = typeof(T).Name;
-                var key = pointerHash.GetKeyString(typeName);
-                await _keyValueDatabase.RemoveAsync(typeName,key);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-        }
+//
+//        public async Task RemoveAsync<T>(Hash pointerHash) where T : IMessage
+//        {
+//            try
+//            {
+//                if (pointerHash == null)
+//                {
+//                    throw new Exception("Pointer hash cannot be null.");
+//                }
+//
+//                var typeName = typeof(T).Name;
+//                var key = pointerHash.GetKeyString(typeName);
+//                await _keyValueDatabase.RemoveAsync(typeName,key);
+//            }
+//            catch (Exception e)
+//            {
+//                Console.WriteLine(e);
+//                throw;
+//            }
+//        }
     }
 }

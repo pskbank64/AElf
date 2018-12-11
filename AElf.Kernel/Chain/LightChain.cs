@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using AElf.Common;
 using AElf.Kernel.Managers;
+using AElf.Kernel.Persistence;
 using AElf.Kernel.Storages;
 using Akka.Dispatch;
 using Akka.Util;
@@ -15,26 +16,28 @@ namespace AElf.Kernel
     public class LightChain : ILightChain
     {
         protected readonly Hash _chainId;
-        protected readonly IChainDao _chainManager;
-        protected readonly IBlockDao _blockManager;
+        protected readonly IChainDao _chainDao;
+        protected readonly IBlockDao _blockDao;
         protected readonly IDataStore _dataStore;
+        protected readonly ILightChainCanonicalDao _lightChainCanonicalDao;
 
         private readonly ILogger _logger;
         
         public LightChain(Hash chainId,
-            IChainDao chainManager,
-            IBlockDao blockManager, IDataStore dataStore, ILogger logger = null)
+            IChainDao chainDao,
+            IBlockDao blockDao, IDataStore dataStore, ILightChainCanonicalDao lightChainCanonicalDao, ILogger logger = null)
         {
             _chainId = chainId.Clone();
-            _chainManager = chainManager;
-            _blockManager = blockManager;
+            _chainDao = chainDao;
+            _blockDao = blockDao;
             _dataStore = dataStore;
+            _lightChainCanonicalDao = lightChainCanonicalDao;
             _logger = logger;
         }
 
         public async Task<ulong> GetCurrentBlockHeightAsync()
         {
-            var hash = await _chainManager.GetCurrentBlockHashAsync(_chainId);
+            var hash = await _chainDao.GetCurrentBlockHashAsync(_chainId);
             if (hash.IsNull())
             {
                 return GlobalConfig.GenesisBlockHeight;
@@ -45,13 +48,13 @@ namespace AElf.Kernel
         
         public async Task<Hash> GetCurrentBlockHashAsync()
         {
-            var hash = await _chainManager.GetCurrentBlockHashAsync(_chainId);
+            var hash = await _chainDao.GetCurrentBlockHashAsync(_chainId);
             return hash;
         }
 
         public async Task<bool> HasHeader(Hash blockHash)
         {
-            var header = await _blockManager.GetBlockHeaderAsync(blockHash);
+            var header = await _blockDao.GetBlockHeaderAsync(blockHash);
             return header != null;
         }
 
@@ -65,7 +68,7 @@ namespace AElf.Kernel
 
         public async Task<IBlockHeader> GetHeaderByHashAsync(Hash blockHash)
         {
-            return await _blockManager.GetBlockHeaderAsync(blockHash);
+            return await _blockDao.GetBlockHeaderAsync(blockHash);
         }
 
         public async Task<IBlockHeader> GetHeaderByHeightAsync(ulong height)
@@ -94,7 +97,7 @@ namespace AElf.Kernel
         protected async Task AddHeaderAsync(IBlockHeader header)
         {
             await CheckHeaderAppendable(header);
-            await _blockManager.AddBlockHeaderAsync((BlockHeader) header);
+            await _blockDao.AddBlockHeaderAsync((BlockHeader) header);
             await MaybeSwitchBranch(header);
             MessageHub.Instance.Publish((BlockHeader) header);
         }
@@ -106,7 +109,7 @@ namespace AElf.Kernel
 
         public async Task<Hash> GetCanonicalHashAsync(ulong height)
         {
-            var blockHash = await _dataStore.GetAsync<Hash>(GetHeightHash(height).OfType(HashType.CanonicalHash));
+            var blockHash = await _lightChainCanonicalDao.GetAsync(GetHeightHash(height).OfType(HashType.CanonicalHash));
             return blockHash;
         }
 
@@ -118,10 +121,10 @@ namespace AElf.Kernel
             // TODO: more strict genesis
             if (blockHeader.Index == GlobalConfig.GenesisBlockHeight)
             {
-                var curHash = await _chainManager.GetCurrentBlockHashAsync(_chainId);
+                var curHash = await _chainDao.GetCurrentBlockHashAsync(_chainId);
                 if (curHash.IsNull())
                 {
-                    await _chainManager.AddChainAsync(_chainId, header.GetHash());
+                    await _chainDao.AddChainAsync(_chainId, header.GetHash());
                 }
                 return;
             }
@@ -190,8 +193,8 @@ namespace AElf.Kernel
             {
                 var hash = GetHeightHash(blockHeader.Index).OfType(HashType.CanonicalHash);
 //                hash.Height = blockHeader.Index;
-                await _dataStore.InsertAsync(hash, header.GetHash());
-                await _chainManager.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
+                await _lightChainCanonicalDao.AddOrUpdateAsync(hash, header.GetHash());
+                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
                 return;
             }
             
@@ -202,14 +205,14 @@ namespace AElf.Kernel
             {
                 var hash = GetHeightHash(((BlockHeader) header).Index).OfType(HashType.CanonicalHash);
 //                hash.Height = ((BlockHeader) header).Index;
-                await _dataStore.InsertAsync(hash, header.GetHash());
-                await _chainManager.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
+                await _lightChainCanonicalDao.AddOrUpdateAsync(hash, header.GetHash());
+                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
                 return;
             }
 
             if (((BlockHeader) header).Index > ((BlockHeader) currentHeader).Index)
             {
-                await _chainManager.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
+                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, header.GetHash());
                 var branches = await GetComparedBranchesAsync(currentHeader, header);
                 if (branches.Item2.Count > 0)
                 {
@@ -222,7 +225,7 @@ namespace AElf.Kernel
 
                         var hash = GetHeightHash(((BlockHeader) newBranchHeader).Index).OfType(HashType.CanonicalHash);
 //                        hash.Height = ((BlockHeader) newBranchHeader).Index;
-                        await _dataStore.InsertAsync(hash, newBranchHeader.GetHash());
+                        await _lightChainCanonicalDao.AddOrUpdateAsync(hash, newBranchHeader.GetHash());
                     }
                 }
             }

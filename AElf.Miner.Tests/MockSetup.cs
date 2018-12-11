@@ -21,6 +21,7 @@ using AElf.Common;
 using AElf.Configuration.Config.Chain;
 using AElf.Database;
 using AElf.Execution.Execution;
+using AElf.Kernel.Persistence;
 using AElf.Miner.Rpc.Client;
 using AElf.Miner.TxMemPool;
 using AElf.Synchronization.BlockExecution;
@@ -54,6 +55,7 @@ namespace AElf.Miner.Tests
         private ITxRefBlockValidator _refBlockValidator;
         private IChainDao _chainDao;
         private IStateDao _stateDao;
+        private ILightChainCanonicalDao _lightChainCanonicalDao;
 
         public MockSetup(ILogger logger, IKeyValueDatabase database, IDataStore dataStore, IStateDao stateDao, ITxSignatureVerifier signatureVerifier, ITxRefBlockValidator refBlockValidator)
         {
@@ -75,8 +77,9 @@ namespace AElf.Miner.Tests
             _transactionTraceDao = new TransactionTraceDao(_database);
             _functionMetadataService = new FunctionMetadataService(_dataStore, _logger);
             _chainDao = new ChainDao(_database);
+            _lightChainCanonicalDao = new LightChainCanonicalDao(_database);
             _chainService = new ChainService(_chainDao, new BlockDao(_database),
-                _transactionDao, _transactionTraceDao, _dataStore, StateDao);
+                _transactionDao, _transactionTraceDao, _dataStore, StateDao, _lightChainCanonicalDao);
             _smartContractRunnerFactory = new SmartContractRunnerFactory();
             /*var runner = new SmartContractRunner("../../../../AElf.SDK.CSharp/bin/Debug/netstandard2.0/");
             _smartContractRunnerFactory.AddRunner(0, runner);*/

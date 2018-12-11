@@ -8,6 +8,7 @@ using AElf.Kernel.Storages;
 using Easy.MessageHub;
 using NLog;
 using AElf.Common;
+using AElf.Kernel.Persistence;
 using AElf.Kernel.Types.Common;
 using NServiceKit.Common.Extensions;
 
@@ -25,10 +26,10 @@ namespace AElf.Kernel
         private static bool _prepareTerminated;
         private static bool _terminated;
 
-        public BlockChain(Hash chainId, IChainDao chainManager, IBlockDao blockManager,
+        public BlockChain(Hash chainId, IChainDao chainDao, IBlockDao blockDao,
             ITransactionDao transactionDao, ITransactionTraceDao transactionTraceDao,
-            IStateDao stateDao, IDataStore dataStore) : base(
-            chainId, chainManager, blockManager, dataStore)
+            IStateDao stateDao, IDataStore dataStore, ILightChainCanonicalDao lightChainCanonicalDao) : base(
+            chainId, chainDao, blockDao, dataStore, lightChainCanonicalDao)
         {
             _transactionDao = transactionDao;
             _transactionTraceDao = transactionTraceDao;
@@ -59,7 +60,7 @@ namespace AElf.Kernel
 
         public async Task<bool> HasBlock(Hash blockId)
         {
-            var blk = await _blockManager.GetBlockAsync(blockId);
+            var blk = await _blockDao.GetBlockAsync(blockId);
             return blk != null;
         }
 
@@ -73,7 +74,7 @@ namespace AElf.Kernel
             await AddHeaderAsync(block.Header);
             // TODO: This will be problematic if the block is used somewhere else after this method
             block.Body.TransactionList.Clear();
-            await _blockManager.AddBlockBodyAsync(block.Header.GetHash(), block.Body);
+            await _blockDao.AddBlockBodyAsync(block.Header.GetHash(), block.Body);
         }
 
         public async Task AddBlocksAsync(IEnumerable<IBlock> blocks)
@@ -86,7 +87,7 @@ namespace AElf.Kernel
 
         public async Task<IBlock> GetBlockByHashAsync(Hash blockId)
         {
-            return await _blockManager.GetBlockAsync(blockId);
+            return await _blockDao.GetBlockAsync(blockId);
         }
 
         public async Task<IBlock> GetBlockByHeightAsync(ulong height)
@@ -142,7 +143,7 @@ namespace AElf.Kernel
                     }
 
                     var h = GetHeightHash(i).OfType(HashType.CanonicalHash);
-                    await _dataStore.RemoveAsync<Hash>(h);
+                    await _lightChainCanonicalDao.RemoveAsync(h);
                     await RollbackSideChainInfo(block);
                     await RollbackStateForBlock(block);
                     blocks.Add((Block) block);
@@ -152,7 +153,7 @@ namespace AElf.Kernel
 
                 var hash = await GetCanonicalHashAsync(height);
 
-                await _chainManager.UpdateCurrentBlockHashAsync(_chainId, hash);
+                await _chainDao.UpdateCurrentBlockHashAsync(_chainId, hash);
 
                 MessageHub.Instance.Publish(new BranchRolledBack(blocks));
                 _logger?.Trace("Finished rollback to " + height);
@@ -175,7 +176,7 @@ namespace AElf.Kernel
         {
             foreach (var info in block.Body.IndexedInfo)
             {
-                await _chainManager.UpdateCurrentBlockHeightAsync(info.ChainId,
+                await _chainDao.UpdateCurrentBlockHeightAsync(info.ChainId,
                     info.Height > GlobalConfig.GenesisBlockHeight ? info.Height - 1 : 0);
             }
         }

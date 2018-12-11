@@ -14,6 +14,7 @@
 using    AElf.Common;
     using AElf.Database;
     using AElf.Execution.Execution;
+    using AElf.Kernel.Persistence;
     using AElf.Miner.TxMemPool;
     using AElf.Runtime.CSharp;
     using AElf.SmartContract.Metadata;
@@ -45,6 +46,7 @@ namespace AElf.Contracts.SideChain.Tests
             private ILogger _logger;
             private IDataStore _dataStore;
             private IKeyValueDatabase _database;
+            private ILightChainCanonicalDao _lightChainCanonicalDao;
 
             public MockSetup(ILogger logger)
             {
@@ -59,8 +61,9 @@ namespace AElf.Contracts.SideChain.Tests
                 var transactionTraceManager = new TransactionTraceDao(_database);
                 _functionMetadataService = new FunctionMetadataService(_dataStore, _logger);
                 var chainManagerBasic = new ChainDao(_database);
+                _lightChainCanonicalDao =new LightChainCanonicalDao(_database);
                 ChainService = new ChainService(chainManagerBasic, new BlockDao(_database),
-                    transactionManager, transactionTraceManager, _dataStore, StateDao);
+                    transactionManager, transactionTraceManager, _dataStore, StateDao, _lightChainCanonicalDao);
                 _smartContractRunnerFactory = new SmartContractRunnerFactory();
                 var runner = new SmartContractRunner("../../../../AElf.Runtime.CSharp.Tests.TestContract/bin/Debug/netstandard2.0/");
                 _smartContractRunnerFactory.AddRunner(0, runner);
@@ -73,7 +76,7 @@ namespace AElf.Contracts.SideChain.Tests
                     await Init();
                 }).Unwrap().Wait();
                 SmartContractService = new SmartContractService(SmartContractDao, _smartContractRunnerFactory, StateDao, _functionMetadataService);
-                ChainService = new ChainService(new ChainDao(_database), new BlockDao(_database), new TransactionDao(_database), new TransactionTraceDao(_database), _dataStore, StateDao);
+                ChainService = new ChainService(new ChainDao(_database), new BlockDao(_database), new TransactionDao(_database), new TransactionTraceDao(_database), _dataStore, StateDao,_lightChainCanonicalDao);
             }
 
             private void NewStorage()

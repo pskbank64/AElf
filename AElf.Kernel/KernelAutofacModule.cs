@@ -1,4 +1,5 @@
 ﻿using AElf.Kernel.Managers;
+using AElf.Kernel.Persistence;
 using AElf.Kernel.Storages;
 using Autofac;
 
@@ -16,13 +17,14 @@ namespace AElf.Kernel
 
             builder.RegisterGeneric(typeof(Serializer<>)).As(typeof(ISerializer<>));
             
-            builder.RegisterType<SmartContractDao>().As<ISmartContractDao>();
-            builder.RegisterType<TransactionDao>().As<ITransactionDao>();
-            builder.RegisterType<TransactionResultDao>().As<ITransactionResultDao>();
-            builder.RegisterType<BlockDao>().As<IBlockDao>();
-            builder.RegisterType<ChainDao>().As<IChainDao>();
-            builder.RegisterType<BinaryMerkleTreeDao>().As<IBinaryMerkleTreeDao>();
-            builder.RegisterType<DataStore>().As<IDataStore>();
+            builder.RegisterType<SmartContractDao>().As<ISmartContractDao>().SingleInstance();
+            builder.RegisterType<TransactionDao>().As<ITransactionDao>().SingleInstance();
+            builder.RegisterType<TransactionResultDao>().As<ITransactionResultDao>().SingleInstance();
+            builder.RegisterType<BlockDao>().As<IBlockDao>().SingleInstance();
+            builder.RegisterType<ChainDao>().As<IChainDao>().SingleInstance();
+            builder.RegisterType<BinaryMerkleTreeDao>().As<IBinaryMerkleTreeDao>().SingleInstance();
+            builder.RegisterType<DataStore>().As<IDataStore>().SingleInstance();
+            builder.RegisterType<LightChainCanonicalDao>().As<ILightChainCanonicalDao>().SingleInstance();
         }
     }
 }
